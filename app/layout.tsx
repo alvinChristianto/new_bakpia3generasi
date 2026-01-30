@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/components/cart-provider'
+import { Geist, Geist_Mono } from "next/font/google";
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -64,13 +65,23 @@ export const metadata: Metadata = {
   },
 }
 
+const geistSans = Geist({
+  variable: "--font-sans", // Ini harus cocok dengan variabel di CSS Anda
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-mono", // Ini harus cocok dengan variabel di CSS Anda
+  subsets: ["latin"],
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className={`font-sans antialiased`}>
         <CartProvider>
           {children}
