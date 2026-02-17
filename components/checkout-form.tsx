@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { AlertCircle } from 'lucide-react'
 
 export interface CustomerData {
-  namaPerierima: string
+  namaPenerima: string
   email: string
   nomorTelepon: string
 }
@@ -18,7 +18,7 @@ interface CheckoutFormProps {
 export function CheckoutForm({ onDataChange, initialData, onValidationChange }: CheckoutFormProps) {
   const [formData, setFormData] = useState<CustomerData>(
     initialData || {
-      namaPerierima: '',
+      namaPenerima: '',
       email: '',
       nomorTelepon: '',
     }
@@ -26,7 +26,7 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange }: 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const getFieldError = (field: keyof CustomerData, value: string): string => {
-    if (field === 'namaPerierima') {
+    if (field === 'namaPenerima') {
       if (!value.trim()) {
         return 'Nama penerima harus diisi'
       }
@@ -78,15 +78,15 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange }: 
     }
 
     // Check overall form validity
-    const updatedFormValid = field === 'namaPerierima' 
+    const updatedFormValid = field === 'namaPenerima' 
       ? value.trim().length >= 3 &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
         /^(\+62|0)[0-9]{9,12}$/.test(formData.nomorTelepon.replace(/[-\s]/g, ''))
       : field === 'email'
-      ? formData.namaPerierima.trim().length >= 3 &&
+      ? formData.namaPenerima.trim().length >= 3 &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) &&
         /^(\+62|0)[0-9]{9,12}$/.test(formData.nomorTelepon.replace(/[-\s]/g, ''))
-      : formData.namaPerierima.trim().length >= 3 &&
+      : formData.namaPenerima.trim().length >= 3 &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
         /^(\+62|0)[0-9]{9,12}$/.test(value.replace(/[-\s]/g, ''))
 
@@ -105,17 +105,17 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange }: 
         </label>
         <input
           type="text"
-          value={formData.namaPerierima}
-          onChange={(e) => handleChange('namaPerierima', e.target.value)}
+          value={formData.namaPenerima}
+          onChange={(e) => handleChange('namaPenerima', e.target.value)}
           className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground placeholder-muted-foreground transition ${
-            errors.namaPerierima ? 'border-destructive' : 'border-border'
+            errors.namaPenerima ? 'border-destructive' : 'border-border'
           } focus:outline-none focus:ring-2 focus:ring-primary/50`}
           placeholder="Masukkan nama penerima lengkap (minimal 3 huruf)"
         />
-        {errors.namaPerierima && (
+        {errors.namaPenerima && (
           <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errors.namaPerierima}</span>
+            <span>{errors.namaPenerima}</span>
           </div>
         )}
       </div>
