@@ -36,6 +36,7 @@ export default function CheckoutPage() {
     type: "delivery",
     fullAddress: "Jalan Malioboro No. 123, Yogyakarta 55271",
   });
+  const [shippingCost, setShippingCost] = useState(0); // You can set this based on your logic or API response  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({
     title: "",
@@ -49,7 +50,6 @@ export default function CheckoutPage() {
 
   // Inside your component
 
-  const shippingCost = 50000;
   const tax = useMemo(() => Math.round(subtotal * 0.1), [subtotal]);
 
   // This is your "Parent Variable"
@@ -180,6 +180,12 @@ export default function CheckoutPage() {
 
   const handleAddressChange = (newAddress: AddressData) => {
     setAddress(newAddress);
+    console.log("Address updated in parent:", newAddress);
+    if (newAddress.type === "delivery") {
+      setShippingCost(50000); // Set shipping cost for delivery
+    } else {
+      setShippingCost(0); // No shipping cost for pickup
+    }
   };
 
   const handleValidationChange = (isValid: boolean) => {
@@ -355,20 +361,19 @@ export default function CheckoutPage() {
                                 {
                                   id: "1",
                                   name: "Bakpia Jogja Istimewa - Malioboro",
-                                  address:
-                                    "Jalan Malioboro No. 123, Yogyakarta",
+                                  fullAddress: "store Jalan Malioboro No. 123, Yogyakarta",
                                   phone: "+62 274-512345",
                                 },
                                 {
                                   id: "2",
                                   name: "Bakpia Jogja Istimewa - Kota Baru",
-                                  address: "Jalan Kota Baru No. 45, Yogyakarta",
+                                  fullAddress: "store  Jalan Kota Baru No. 45, Yogyakarta",
                                   phone: "+62 274-623456",
                                 },
                                 {
                                   id: "3",
                                   name: "Bakpia Jogja Istimewa - Borobudur",
-                                  address: "Jalan Borobudur No. 67, Magelang",
+                                  fullAddress: "store  Jalan Borobudur No. 67, Magelang",
                                   phone: "+62 293-734567",
                                 },
                               ];

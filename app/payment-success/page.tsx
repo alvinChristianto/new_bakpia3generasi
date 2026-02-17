@@ -1,133 +1,255 @@
-'use client'
+"use client";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
+import { CheckCircle, Loader2, AlertCircle, ShoppingBag } from "lucide-react";
+import { getTransactionByInvNumber } from "../api/endpoints/transaction_by_invoicenumber";
+import { useCart } from "@/components/cart-provider";
 
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Navbar } from '@/components/navbar'
-import { Footer } from '@/components/footer'
-import { CheckCircle } from 'lucide-react'
 
 export default function PaymentSuccessPage() {
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get("order_id"); // Reads INV-5N7YVBWP from URL
+
+  const [loading, setLoading] = useState(true);
+  const [orderData, setOrderData] = useState<any>(null);
+  const [error, setError] = useState(false);
+
+  const { cart, subtotal, clearCart, removeItem, updateQuantity } = useCart();
 
   const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(amount)
+    }).format(amount);
+  };
+
+  useEffect(() => {
+    clearCart(); // Clear cart on success page load
+
+    const fetchOrder = async () => {
+      if (!orderId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await getTransactionByInvNumber(orderId);
+
+        // Handling the backend structure: { data: $transaction, details: $transactionDetails }
+        if (response.success && response.data) {
+          // Logic to handle JSON address
+          let displayAddress = "";
+          try {
+            const addr =
+              typeof response.data.shipping_address_snapshot === "string"
+                ? JSON.parse(response.data.shipping_address_snapshot)
+                : response.data.shipping_address_snapshot;
+
+            displayAddress =
+              addr.fullAddress || addr.full_address || "Alamat tidak ditemukan";
+          } catch (e) {
+            displayAddress = response.data.shipping_address_snapshot; // Fallback if parsing fails
+          }
+
+          setOrderData({
+            invoiceNumber: response.data.invoice_number,
+            date: new Date(response.data.created_at).toLocaleDateString(
+              "id-ID",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                minute: "2-digit",
+                hour: "2-digit",
+              },
+            ),
+            total: response.data.grand_total,
+            items: response.details, // This is your $transactionDetails array
+            shippingAddress: displayAddress,
+            shippingCost: response.data.shipping_cost,
+            service_fee: response.data.service_fee,
+            estimatedDelivery: "3-5 Hari Kerja",
+          });
+        } else {
+          setError(true);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId]);
+
+  // --- 1. LOADING STATE ---
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground animate-pulse">
+          Mengambil detail pesanan...
+        </p>
+      </div>
+    );
   }
 
-  // Mock order data - in real app, this would come from order confirmation
-  const orderData = {
-    orderId: 'ORD-2024-001234',
-    date: new Date().toLocaleDateString('id-ID', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }),
-    total: 425000,
-    items: [
-      { name: 'Bakpia Kukus Premium', quantity: 2, price: 120000 },
-      { name: 'Bakpia Pathok Coklat', quantity: 1, price: 95000 },
-    ],
-    shippingAddress: 'Jalan Malioboro No. 123, Yogyakarta 55271',
-    estimatedDelivery: '3-5 hari kerja',
+  // --- 2. ERROR / NOT FOUND STATE ---
+  if (error || !orderData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <AlertCircle className="w-16 h-16 text-destructive mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Pesanan Tidak Ditemukan</h1>
+        <p className="text-muted-foreground mb-8 max-w-md">
+          Maaf, kami tidak dapat menemukan data untuk Invoice{" "}
+          <strong>{orderId}</strong>. Pastikan nomor pesanan sudah benar.
+        </p>
+        <Link href="/">
+          <Button size="lg">Kembali Berbelanja</Button>
+        </Link>
+      </div>
+    );
   }
 
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-background py-8 px-4 md:py-12">
+      <main className="min-h-screen bg-slate-50 py-8 px-4 md:py-12">
         <div className="max-w-3xl mx-auto">
-          {/* Success Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-10">
             <div className="flex justify-center mb-4">
-              <CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary" />
+              <div className="bg-green-100 p-3 rounded-full">
+                <CheckCircle className="w-16 h-16 text-green-600" />
+              </div>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Pembayaran Berhasil!
+            <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-2">
+              Terima Kasih!
             </h1>
             <p className="text-muted-foreground">
-              Pesanan Anda dikonfirmasi dan akan segera diproses
+              Pembayaran Anda telah kami terima dan pesanan sedang diproses.
             </p>
           </div>
 
-          {/* Main Content Grid */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
-            {/* Left: Order & Shipping Info */}
-            <div className="bg-card border border-border rounded-lg p-6 space-y-6">
+            {/* Left Column: Summary */}
+            <div className="bg-white shadow-sm border border-slate-200 rounded-xl p-6 space-y-6">
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
-                  Nomor Pesanan
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  ID Transaksi
                 </p>
-                <p className="text-lg font-bold text-foreground">{orderData.orderId}</p>
+                <p className="text-lg font-mono font-bold text-primary">
+                  {orderData.invoiceNumber}
+                </p>
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-                  Pengiriman Ke
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Alamat Pengiriman/pengambilan
                 </p>
-                <p className="text-sm text-foreground mb-2">{orderData.shippingAddress}</p>
-                <p className="text-xs text-muted-foreground">
-                  Estimasi: <span className="font-semibold text-foreground">{orderData.estimatedDelivery}</span>
+                <p className="text-sm text-slate-700 leading-relaxed mb-2">
+                  {orderData.shippingAddress}
                 </p>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-xs text-slate-500">
+                    Estimasi Tiba:{" "}
+                    <span className="font-bold text-slate-900">
+                      {orderData.estimatedDelivery}
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Right: Total & Quick Actions */}
+            {/* Right Column: Billing */}
             <div className="space-y-6">
-              <div className="bg-muted border border-border rounded-lg p-6">
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">
+              <div className="bg-primary text-primary-foreground rounded-xl p-6 shadow-md shadow-primary/20">
+                <p className="text-xs font-bold uppercase opacity-80 mb-3">
                   Total Pembayaran
                 </p>
-                <p className="text-3xl md:text-4xl font-bold text-primary mb-3">
+                <p className="text-3xl md:text-4xl font-black mb-3">
                   {formatRupiah(orderData.total)}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Tanggal: {orderData.date}
+                <p className="text-xs opacity-80 font-medium">
+                  Lunas pada: {orderData.date}
                 </p>
               </div>
 
-              {/* Items Summary */}
-              <div className="bg-card border border-border rounded-lg p-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">
-                  Item Pesanan
-                </p>
-                <div className="space-y-2">
-                  {orderData.items.map((item, index) => (
-                    <div key={index} className="flex justify-between text-sm">
-                      <span className="text-foreground">{item.name} x{item.quantity}</span>
-                      <span className="font-semibold text-foreground">{formatRupiah(item.price)}</span>
+              <div className="bg-white shadow-sm border border-slate-200 rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-4 border-b pb-3">
+                  <ShoppingBag className="w-4 h-4 text-slate-400" />
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Detail Item
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {orderData.items.map((item: any, index: number) => (
+                    <div
+                      key={index}
+                      className="flex justify-between items-start text-sm"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-slate-800">
+                          {item.product_name_snapshot}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          Qty: {item.quantity}
+                        </span>
+                      </div>
+                      <span className="font-bold text-slate-900">
+                        {formatRupiah(item.price_per_item)}
+                      </span>
                     </div>
                   ))}
+
+                  {/* Fees Section */}
+                  <div className="border-t pt-3 mt-3 space-y-2">
+                    <div className="flex justify-between items-center text-[13px] text-slate-500">
+                      <span>Biaya Pengiriman</span>
+                      <span>{formatRupiah(orderData.shippingCost || 0)}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[13px] text-slate-500">
+                      <span>Pajak (10%)</span>
+                      <span>{formatRupiah(orderData.service_fee || 0)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="grid sm:grid-cols-2 gap-4 mb-6">
-            <Link href="/">
-              <Button variant="outline" className="w-full bg-transparent">
-                Kembali ke Beranda
+          {/* Actions */}
+          <div className="grid sm:grid-cols-2 gap-4 mb-10">
+            <Link href="/" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full h-12 border-2 hover:bg-slate-100 transition-colors"
+              >
+                Kembali Beranda
               </Button>
             </Link>
-            <Link href="/dashboard/orders">
-              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Lihat Pesanan Saya
+            <Link href="/dashboard/orders" className="w-full">
+              <Button className="w-full h-12 shadow-lg shadow-primary/30">
+                Lacak Pesanan
               </Button>
             </Link>
           </div>
 
-          {/* Help Text */}
-          <p className="text-center text-xs text-muted-foreground">
-            Ada pertanyaan? Hubungi{' '}
-            <a href="mailto:support@bakpiajogja.com" className="text-primary hover:underline font-semibold">
-              support@bakpiajogja.com
-            </a>
+          <p className="text-center text-xs text-slate-400">
+            Butuh bantuan? Tim support kami siap membantu di{" "}
+            <span className="text-primary font-bold">support@thecabin.com</span>
           </p>
         </div>
       </main>
       <Footer />
     </>
-  )
+  );
 }
