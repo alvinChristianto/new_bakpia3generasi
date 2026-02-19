@@ -1,6 +1,7 @@
 import apiClient from "../client";
 import { ApiResponse } from "../types";
 
+
 export const fetchExampleData = async (
   id: string,
 ): Promise<ApiResponse<any>> => {
@@ -41,3 +42,5 @@ export const checkoutOrder = async (
     throw error;
   }
 };
+
+

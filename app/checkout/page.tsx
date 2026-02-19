@@ -12,6 +12,8 @@ import { CheckoutForm, type CustomerData } from "@/components/checkout-form";
 import { AddressEditor, type AddressData } from "@/components/address-editor";
 import * as Dialog from "@radix-ui/react-dialog"; // Or your Shadcn Dialog component
 
+import { ApiResponse } from "../api/types";
+
 import {
   ChevronLeft,
   Package,
@@ -26,6 +28,16 @@ import {
 import Script from "next/script";
 import { checkoutOrder } from "../api/endpoints/checkout";
 
+// Define what the Laravel 'data' object looks like
+interface CheckoutData {
+  message: string; // Added this based on your JSON
+  snap_token: string;
+  reference: {
+    invoice_number_backend: string;
+    payment_token_midtrans: string;
+  };
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, subtotal, clearCart, removeItem, updateQuantity } = useCart();
@@ -36,7 +48,7 @@ export default function CheckoutPage() {
     type: "delivery",
     fullAddress: "Jalan Malioboro No. 123, Yogyakarta 55271",
   });
-  const [shippingCost, setShippingCost] = useState(0); // You can set this based on your logic or API response  
+  const [shippingCost, setShippingCost] = useState(50000); // You can set this based on your logic or API response
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({
     title: "",
@@ -106,11 +118,17 @@ export default function CheckoutPage() {
         address: address,
       };
 
-      const response = await checkoutOrder(payload);
+      const response = (await checkoutOrder(
+        payload,
+      )) as ApiResponse<CheckoutData>;
       // 3. Trigger Midtrans Snap
       // Note: response is resultToken. We check for snap_token specifically
-      if (response?.snap_token) {
-        window.snap.pay(response.snap_token, {
+      // if (response?.snap_token) {
+        console.log(response);
+      if (response?.data?.snap_token) {
+        // window.snap.pay(response.data.snap_token, {
+        (window as any).snap.pay(response.data.snap_token, {
+          
           onSuccess: function (result: any) {
             // Success doesn't necessarily need a modal if you are redirecting immediately,
             // but you can show it for 2 seconds then push the router.
@@ -361,19 +379,22 @@ export default function CheckoutPage() {
                                 {
                                   id: "1",
                                   name: "Bakpia Jogja Istimewa - Malioboro",
-                                  fullAddress: "store Jalan Malioboro No. 123, Yogyakarta",
+                                  fullAddress:
+                                    "store Jalan Malioboro No. 123, Yogyakarta",
                                   phone: "+62 274-512345",
                                 },
                                 {
                                   id: "2",
                                   name: "Bakpia Jogja Istimewa - Kota Baru",
-                                  fullAddress: "store  Jalan Kota Baru No. 45, Yogyakarta",
+                                  fullAddress:
+                                    "store  Jalan Kota Baru No. 45, Yogyakarta",
                                   phone: "+62 274-623456",
                                 },
                                 {
                                   id: "3",
                                   name: "Bakpia Jogja Istimewa - Borobudur",
-                                  fullAddress: "store  Jalan Borobudur No. 67, Magelang",
+                                  fullAddress:
+                                    "store  Jalan Borobudur No. 67, Magelang",
                                   phone: "+62 293-734567",
                                 },
                               ];

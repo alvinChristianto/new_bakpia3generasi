@@ -8,7 +8,33 @@ import { Footer } from "@/components/footer";
 import { CheckCircle, Loader2, AlertCircle, ShoppingBag } from "lucide-react";
 import { getTransactionByInvNumber } from "../api/endpoints/transaction_by_invoicenumber";
 import { useCart } from "@/components/cart-provider";
+import { ApiResponse } from "../api/types";
 
+interface TransactionDetail {
+  product_name: string;
+  price_per_item: number;
+  quantity: number;
+}
+
+interface TransactionData {
+  invoice_number: string;
+  grand_total: number;
+  shipping_address: string;
+  shipping_cost: number;
+  tax_amount: number;
+  created_at: string;
+
+  shipping_address_snapshot: string;
+  service_fee: number;
+
+}
+
+// Define the full structure returned by Laravel
+interface PaymentSuccessData {
+  success: boolean; // Note: if success is inside 'data'
+  data: TransactionData;
+  details: TransactionDetail[];
+}
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
@@ -39,27 +65,29 @@ export default function PaymentSuccessPage() {
 
       try {
         setLoading(true);
-        const response = await getTransactionByInvNumber(orderId);
-
+        const response = await getTransactionByInvNumber(orderId) as ApiResponse<PaymentSuccessData>; ;
+        
         // Handling the backend structure: { data: $transaction, details: $transactionDetails }
-        if (response.success && response.data) {
+        // if (response?.success === 200 && response.data) {
+            console.log("API Response:", response.data.success);
+          if (response.data.success && response.data.data) {
           // Logic to handle JSON address
           let displayAddress = "";
           try {
             const addr =
-              typeof response.data.shipping_address_snapshot === "string"
-                ? JSON.parse(response.data.shipping_address_snapshot)
-                : response.data.shipping_address_snapshot;
+              typeof response.data.data.shipping_address_snapshot === "string"
+                ? JSON.parse(response.data.data.shipping_address_snapshot)
+                : response.data.data.shipping_address_snapshot;
 
             displayAddress =
               addr.fullAddress || addr.full_address || "Alamat tidak ditemukan";
           } catch (e) {
-            displayAddress = response.data.shipping_address_snapshot; // Fallback if parsing fails
+            displayAddress = response.data.data.shipping_address_snapshot; // Fallback if parsing fails
           }
 
           setOrderData({
-            invoiceNumber: response.data.invoice_number,
-            date: new Date(response.data.created_at).toLocaleDateString(
+            invoiceNumber: response.data.data.invoice_number,
+            date: new Date(response.data.data.created_at).toLocaleDateString(
               "id-ID",
               {
                 year: "numeric",
@@ -69,11 +97,11 @@ export default function PaymentSuccessPage() {
                 hour: "2-digit",
               },
             ),
-            total: response.data.grand_total,
-            items: response.details, // This is your $transactionDetails array
+            total: response.data.data.grand_total,
+            items: response.data.details, // This is your $transactionDetails array
             shippingAddress: displayAddress,
-            shippingCost: response.data.shipping_cost,
-            service_fee: response.data.service_fee,
+            shippingCost: response.data.data.shipping_cost,
+            service_fee: response.data.data.service_fee,
             estimatedDelivery: "3-5 Hari Kerja",
           });
         } else {
