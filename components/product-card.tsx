@@ -4,22 +4,27 @@ import Image from 'next/image'
 import { Star, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
+import { randomBytes } from 'crypto'
 
 interface ProductCardProps {
   id: string
-  title: string
+  name: string
   image: string
   rating: number
-  price: number
+  price_8: number
+  price_18: number
+  category: string
   onAddToCart: (id: string) => void
 }
 
 export function ProductCard({
   id,
-  title,
+  name,
   image,
   rating,
-  price,
+  price_8,
+  price_18,
+  category,
   onAddToCart,
 }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false)
@@ -35,7 +40,7 @@ export function ProductCard({
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
-    }).format(price)
+    }).format(price_8)
   }
 
   return (
@@ -44,7 +49,7 @@ export function ProductCard({
       <div className="relative w-full h-64 bg-muted">
         <Image
           src={image || "/placeholder.svg"}
-          alt={title}
+          alt={name}
           fill
           className="object-cover"
         />
@@ -54,7 +59,7 @@ export function ProductCard({
       <div className="p-4">
         {/* Title */}
         <h3 className="text-lg font-semibold text-card-foreground mb-2 line-clamp-2">
-          {title}
+          {name}
         </h3>
 
         {/* Rating */}
@@ -63,11 +68,10 @@ export function ProductCard({
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
-                className={`w-4 h-4 ${
-                  i < Math.floor(rating)
+                className={`w-4 h-4 ${i < Math.floor(rating)
                     ? 'fill-primary text-primary'
                     : 'text-muted-foreground'
-                }`}
+                  }`}
               />
             ))}
           </div>
@@ -78,7 +82,7 @@ export function ProductCard({
 
         {/* Price */}
         <p className="text-2xl font-bold text-primary mb-4">
-          {formatPrice(price)}
+          {formatPrice(price_8)}
         </p>
 
         {/* Add to Cart Button */}

@@ -1,91 +1,63 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ProductCard } from './product-card'
 import { useCart } from '@/hooks/use-cart'
+import { getAllActiveProducts } from '@/app/api/endpoints/all_active_products'
 
 interface Product {
   id: string
-  title: string
+  name: string
   image: string
   rating: number
-  price: number
+  price_8: number
+  price_18: number
   category: string
 }
 
-const allProducts: Product[] = [
-  {
-    id: '1',
-    title: 'Bakpia Kukus Original - Keju',
-    image: '/bakpia-kukus.jpg',
-    rating: 4.8,
-    price: 55000,
-    category: 'Bakpia Kukus',
-  },
-  {
-    id: '2',
-    title: 'Bakpia Kukus - Coklat Almond',
-    image: '/bakpia-kukus.jpg',
-    rating: 4.7,
-    price: 60000,
-    category: 'Bakpia Kukus',
-  },
-  {
-    id: '3',
-    title: 'Bakpia Pathok Premium - Hijau Telur',
-    image: '/bakpia-pathok.jpg',
-    rating: 4.9,
-    price: 65000,
-    category: 'Bakpia Pathok',
-  },
-  {
-    id: '4',
-    title: 'Bakpia Pathok - Kacang',
-    image: '/bakpia-pathok.jpg',
-    rating: 4.6,
-    price: 62000,
-    category: 'Bakpia Pathok',
-  },
-  {
-    id: '5',
-    title: 'Edisi Premium - Assorted Box',
-    image: '/bakpia-premium.jpg',
-    rating: 5.0,
-    price: 150000,
-    category: 'Edisi Premium',
-  },
-  {
-    id: '6',
-    title: 'Edisi Premium - Deluxe Set',
-    image: '/bakpia-premium.jpg',
-    rating: 4.9,
-    price: 200000,
-    category: 'Edisi Premium',
-  },
-]
-
 const categories = [
   { id: 'semua', label: 'Semua Produk' },
-  { id: 'bakpia-kukus', label: 'Bakpia Kukus' },
-  { id: 'bakpia-pathok', label: 'Bakpia Pathok' },
-  { id: 'edisi-premium', label: 'Edisi Premium' },
+  { id: 'bakpia', label: 'Bakpia' },
 ]
 
 export function ProductsSection() {
   const [selectedCategory, setSelectedCategory] = useState('semua')
+  const [allProducts, setAllProducts] = useState<Product[]>([])
   const { addItem } = useCart()
 
-  const filteredProducts = selectedCategory === 'semua'
-    ? allProducts
-    : allProducts.filter((p) => p.category.toLowerCase().replace(/\s+/g, '-') === selectedCategory)
+  const getDataBakpia = async () => {
+    try {
+      const result = await getAllActiveProducts()
+      console.log('Fetched products:', result.data.data)
+      if (result.data) {
+        setAllProducts(result.data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    }
+  }
+
+  useEffect(() => {
+    getDataBakpia()
+  }, [])
+
+  // Inside your component
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === 'semua') return allProducts;
+    console.log("Selected:", selectedCategory)
+    return allProducts.filter((p) => {
+      const slug = p.category.toLowerCase().trim();
+      return slug === selectedCategory;
+    });
+  }, [allProducts, selectedCategory]);
 
   const handleAddToCart = (id: string) => {
     const product = allProducts.find((p) => p.id === id)
     if (product) {
       addItem({
         id: product.id,
-        name: product.title,
-        price: product.price,
+        name: product.name,
+        price: product.price_8,
         image: product.image,
       })
     }
@@ -110,11 +82,10 @@ export function ProductsSection() {
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id)}
-                    className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                      selectedCategory === category.id
-                        ? 'bg-primary text-primary-foreground font-medium'
-                        : 'text-foreground hover:bg-muted'
-                    }`}
+                    className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${selectedCategory === category.id
+                      ? 'bg-primary text-primary-foreground font-medium'
+                      : 'text-foreground hover:bg-muted'
+                      }`}
                   >
                     {category.label}
                   </button>
