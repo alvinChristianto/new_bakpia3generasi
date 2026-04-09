@@ -12,7 +12,7 @@ interface ProductCardProps {
   image: string;
   rating: number;
   price: number;
-  description: number;
+  description: string;
   category: string;
   onAddToCart: (id: string) => void;
 }
