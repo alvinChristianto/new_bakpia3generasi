@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LoginForm, type LoginData } from '@/components/auth-form'
 import { Navbar } from '@/components/navbar'
+import { signIn } from "next-auth/react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,10 +18,10 @@ export default function LoginPage() {
     try {
       // Here you would typically make an API call to login
       console.log('Login data:', data)
-      
+
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      
+
       alert('Login berhasil!')
       router.push('/')
     } catch (err) {
@@ -72,7 +73,10 @@ export default function LoginPage() {
             </div>
 
             {/* Social Login - Optional */}
-            <button className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">
+            <button
+              onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition"
+            >
               Masuk dengan Google
             </button>
           </div>
