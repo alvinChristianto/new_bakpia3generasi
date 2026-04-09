@@ -10,14 +10,15 @@ interface Product {
   name: string
   image: string
   rating: number
-  price_8: number
-  price_18: number
+  price: number
+  description: string
   category: string
 }
 
 const categories = [
   { id: 'semua', label: 'Semua Produk' },
-  { id: 'bakpia', label: 'Bakpia' },
+  { id: 'BAKPIA', label: 'Bakpia' },
+  { id: 'ROTI', label: 'Roti' },
 ]
 
 export function ProductsSection() {
@@ -46,7 +47,7 @@ export function ProductsSection() {
     if (selectedCategory === 'semua') return allProducts;
     console.log("Selected:", selectedCategory)
     return allProducts.filter((p) => {
-      const slug = p.category.toLowerCase().trim();
+      const slug = p.category.trim();
       return slug === selectedCategory;
     });
   }, [allProducts, selectedCategory]);
@@ -57,7 +58,7 @@ export function ProductsSection() {
       addItem({
         id: product.id,
         name: product.name,
-        price: product.price_8,
+        price: product.price,
         image: product.image,
       })
     }
@@ -67,7 +68,7 @@ export function ProductsSection() {
     <section id="products" className="py-12 md:py-16 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-foreground text-balance mb-12">
-          Koleksi Bakpia Kami
+          Koleksi produk Kami
         </h2>
 
         <div className="flex flex-col lg:flex-row gap-8">

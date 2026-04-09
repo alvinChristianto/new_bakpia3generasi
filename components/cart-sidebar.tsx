@@ -23,7 +23,7 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
       minimumFractionDigits: 0,
     }).format(amount)
   }
-
+  
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:w-[400px] flex flex-col bg-background p-0">
@@ -84,10 +84,11 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
                     {/* Product Image */}
                     <div className="relative flex-shrink-0 w-20 h-20 bg-background rounded-md overflow-hidden">
                       <Image
-                        src={item.image || "/placeholder.svg"}
+                        src={`${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${item.image[0]}`  || "/placeholder.svg"}
                         alt={item.name}
                         fill
                         className="object-cover"
+                        unoptimized
                       />
                     </div>
 

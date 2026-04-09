@@ -1,20 +1,20 @@
-'use client'
+"use client";
 
-import Image from 'next/image'
-import { Star, ShoppingCart } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useState } from 'react'
-import { randomBytes } from 'crypto'
+import Image from "next/image";
+import { Star, ShoppingCart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { randomBytes } from "crypto";
 
 interface ProductCardProps {
-  id: string
-  name: string
-  image: string
-  rating: number
-  price_8: number
-  price_18: number
-  category: string
-  onAddToCart: (id: string) => void
+  id: string;
+  name: string;
+  image: string;
+  rating: number;
+  price: number;
+  description: number;
+  category: string;
+  onAddToCart: (id: string) => void;
 }
 
 export function ProductCard({
@@ -22,36 +22,41 @@ export function ProductCard({
   name,
   image,
   rating,
-  price_8,
-  price_18,
+  price,
+  description,
   category,
   onAddToCart,
 }: ProductCardProps) {
-  const [isAdding, setIsAdding] = useState(false)
+  const [isAdding, setIsAdding] = useState(false);
 
   const handleAddToCart = () => {
-    setIsAdding(true)
-    onAddToCart(id)
-    setTimeout(() => setIsAdding(false), 300)
-  }
+    setIsAdding(true);
+    onAddToCart(id);
+    setTimeout(() => setIsAdding(false), 300);
+  };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(price_8)
-  }
+    }).format(price);
+  };
+
+  const imageSrc = image && image.length > 0 
+    ? `${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${image[0]}` 
+    : "/placeholder.svg";
 
   return (
     <div className="bg-card rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
       {/* Product Image */}
       <div className="relative w-full h-64 bg-muted">
         <Image
-          src={image || "/placeholder.svg"}
+          src={imageSrc}
           alt={name}
           fill
           className="object-cover"
+          unoptimized // Tambahkan properti ini
         />
       </div>
 
@@ -68,21 +73,22 @@ export function ProductCard({
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
-                className={`w-4 h-4 ${i < Math.floor(rating)
-                    ? 'fill-primary text-primary'
-                    : 'text-muted-foreground'
-                  }`}
+                className={`w-4 h-4 ${
+                  i < Math.floor(rating)
+                    ? "fill-primary text-primary"
+                    : "text-muted-foreground"
+                }`}
               />
             ))}
           </div>
           <span className="text-sm text-muted-foreground">
-            {rating.toFixed(1)}/5
+            {rating}/5
           </span>
         </div>
 
         {/* Price */}
         <p className="text-2xl font-bold text-primary mb-4">
-          {formatPrice(price_8)}
+          {formatPrice(price)}
         </p>
 
         {/* Add to Cart Button */}
@@ -92,9 +98,9 @@ export function ProductCard({
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           <ShoppingCart className="w-4 h-4 mr-2" />
-          {isAdding ? 'Menambahkan...' : 'Tambah ke Keranjang'}
+          {isAdding ? "Menambahkan..." : "Tambah ke Keranjang"}
         </Button>
       </div>
     </div>
-  )
+  );
 }
