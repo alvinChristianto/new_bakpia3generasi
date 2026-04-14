@@ -30,6 +30,13 @@ export default function LoginPage() {
     }
   }
 
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    // callbackUrl diarahkan ke dashboard setelah semua proses (termasuk Laravel) selesai
+    await signIn('google', { callbackUrl: '/dashboard' });
+    setIsLoading(false);
+  };
+
   return (
     <>
       <Navbar />
@@ -73,11 +80,14 @@ export default function LoginPage() {
             </div>
 
             {/* Social Login - Optional */}
+
+
             <button
-              onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition"
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50"
             >
-              Masuk dengan Google
+              {isLoading ? "Memproses..." : "Masuk dengan Google"}
             </button>
           </div>
 
