@@ -1,33 +1,62 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { RegisterForm, type RegisterData } from '@/components/auth-form'
-import { Navbar } from '@/components/navbar'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { RegisterForm, type RegisterData } from "@/components/auth-form";
+import { Navbar } from "@/components/navbar";
+import { signIn } from "next-auth/react"; // Pastikan import ini ada
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleRegister = async (data: RegisterData) => {
-    setError(null)
-    setIsLoading(true)
-
+    setError(null);
+    setIsLoading(true);
+    console.log(data);
     try {
-      // Here you would typically make an API call to register the user
-      console.log('Register data:', data)
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      alert('Pendaftaran berhasil! Silakan login dengan akun Anda.')
-      router.push('/login')
-    } catch (err) {
-      setError('Pendaftaran gagal. Silakan coba lagi.')
-      console.error(err)
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BE_ROUTE}/api/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(data),
+        },
+      );
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || "Pendaftaran gagal");
+      }
+
+      // --- BAGIAN KRUSIAL ---
+      // Panggil signIn dengan provider 'credentials' agar Auth.js membuatkan cookie
+      const loginResult = await signIn("credentials", {
+        redirect: false, // Kita handle redirect manual agar lebih smooth
+        email: data.email,
+        password: data.password,
+      });
+
+      if (loginResult?.error) {
+        // Jika pendaftaran sukses tapi login gagal (jarang terjadi)
+        router.push("/login?error=auto-login-failed");
+      } else {
+        // Pendaftaran sukses & Session tercipta di Cookie!
+        router.push("/dashboard");
+      }
+      // -----------------------
+    } catch (err: any) {
+      setError(err.message);
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -36,7 +65,9 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           {/* Logo/Brand */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Bakpia Jogja</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Bakpia Jogja
+            </h1>
             <p className="text-muted-foreground">Istimewa</p>
           </div>
 
@@ -52,7 +83,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <RegisterForm onSubmit={handleRegister}/>
+            <RegisterForm onSubmit={handleRegister} />
 
             {/* Or Divider */}
             <div className="relative my-6">
@@ -72,11 +103,11 @@ export default function RegisterPage() {
 
           {/* Additional Info */}
           <p className="text-center text-xs text-muted-foreground mt-6">
-            Dengan mendaftar, Anda menyetujui{' '}
+            Dengan mendaftar, Anda menyetujui{" "}
             <a href="#" className="text-primary hover:underline">
               Ketentuan Layanan
-            </a>
-            {' '}dan{' '}
+            </a>{" "}
+            dan{" "}
             <a href="#" className="text-primary hover:underline">
               Kebijakan Privasi
             </a>
@@ -84,5 +115,5 @@ export default function RegisterPage() {
         </div>
       </div>
     </>
-  )
+  );
 }

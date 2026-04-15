@@ -1,39 +1,57 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { LoginForm, type LoginData } from '@/components/auth-form'
-import { Navbar } from '@/components/navbar'
-import { signIn } from "next-auth/react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { LoginForm, type LoginData } from "@/components/auth-form";
+import { Navbar } from "@/components/navbar";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleLogin = async (data: LoginData) => {
-    setError(null)
-    setIsLoading(true)
+    setError(null);
+    setIsLoading(true);
 
-    try {
-      // Here you would typically make an API call to login
-      console.log('Login data:', data)
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      alert('Login berhasil!')
-      router.push('/')
-    } catch (err) {
-      setError('Login gagal. Silakan cek email dan password Anda.')
-      console.error(err)
-    }
-  }
+    fetch(`${process.env.NEXT_PUBLIC_BE_ROUTE}/api/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(data),
+    })
+      .then((res) => res.json())
+      .then((result) => {
+        if (!result.access_token) {
+          throw new Error(result.message || "Login gagal");
+        }
+        // Simpan token di cookie melalui NextAuth
+        signIn("credentials", {
+          redirect: false,
+          email: data.email,
+          password: data.password,
+        }).then((loginResult) => {
+          if (loginResult?.error) {
+            router.push("/login?error=auto-login-failed");
+          } else {
+            router.push("/dashboard");
+          }
+        });
+      })
+      .catch((err) => {
+        setError(err.message);
+        console.error(err);
+      })
+      .finally(() => setIsLoading(false));
+  };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     // callbackUrl diarahkan ke dashboard setelah semua proses (termasuk Laravel) selesai
-    await signIn('google', { callbackUrl: '/dashboard' });
+    await signIn("google", { callbackUrl: "/dashboard" });
     setIsLoading(false);
   };
 
@@ -44,7 +62,9 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Logo/Brand */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Bakpia Jogja</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Bakpia Jogja
+            </h1>
             <p className="text-muted-foreground">Istimewa</p>
           </div>
 
@@ -81,7 +101,6 @@ export default function LoginPage() {
 
             {/* Social Login - Optional */}
 
-
             <button
               onClick={handleGoogleLogin}
               disabled={isLoading}
@@ -93,13 +112,16 @@ export default function LoginPage() {
 
           {/* Additional Info */}
           <p className="text-center text-xs text-muted-foreground mt-6">
-            Belum punya akun?{' '}
-            <a href="/register" className="text-primary hover:underline font-semibold">
+            Belum punya akun?{" "}
+            <a
+              href="/register"
+              className="text-primary hover:underline font-semibold"
+            >
               Daftar di sini
             </a>
           </p>
         </div>
       </div>
     </>
-  )
+  );
 }

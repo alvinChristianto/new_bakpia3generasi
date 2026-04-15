@@ -21,6 +21,7 @@ export function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
   const router = useRouter()
 
   const handleLogout = () => {
+    
     // Clear user session/data here if needed
     localStorage.removeItem('bakpia-cart')
     // Redirect to home
