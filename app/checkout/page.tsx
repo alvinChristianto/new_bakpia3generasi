@@ -67,7 +67,7 @@ export default function CheckoutPage() {
   // This is your "Parent Variable"
   const grandTotal = useMemo(
     () => subtotal + shippingCost + tax,
-    [subtotal, tax],
+    [subtotal, shippingCost, tax],
   );
   console.log("Total calculated:", grandTotal);
 

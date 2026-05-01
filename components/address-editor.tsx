@@ -136,6 +136,13 @@ export function AddressEditor({
     }
   };
 
+  const getStoreInfo = (id: string) => {
+    const store = OFFLINE_STORES.find((s) => s.id === id);
+    return store
+      ? `${store.name} | ${store.address} | ${store.phone}`
+      : undefined;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -253,9 +260,7 @@ export function AddressEditor({
                     setFormData({
                       ...formData,
                       storeId: e.target.value,
-                      fullAddress: OFFLINE_STORES.find(
-                        (store) => store.id === e.target.value,
-                      )?.address,
+                      fullAddress: getStoreInfo(e.target.value),
                     });
                     if (errors.storeId) setErrors({ ...errors, storeId: "" });
                   }}
