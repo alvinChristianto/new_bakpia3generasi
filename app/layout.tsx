@@ -42,7 +42,7 @@ export const metadata: Metadata = {
       "Bakpia 3 Generasi, oleh-oleh dari yogyakarta yang enak dan terjangkau",
     images: [
       {
-        url: "/bakpia-hero.webp",
+        url: "https://t1.bakpia3generasi.id/_next/image?url=%2Fbakpia-hero.webp&w=640&q=75",
         width: 1200,
         height: 630,
         alt: "Bakpia 3 Generasi",
