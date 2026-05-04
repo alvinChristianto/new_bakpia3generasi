@@ -8,11 +8,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Bakpia Jogja Istimewa - Premium Indonesian Bakpia",
-    template: "%s - Bakpia Jogja Istimewa",
+    default: "Bakpia 3 Generasi - Premium Indonesian Bakpia",
+    template: "%s - Bakpia 3 Generasi",
   },
   description:
-    "Rasakan cita rasa autentik Bakpia Jogja Istimewa. Produk bakpia premium buatan tangan dengan resep tradisional yang telah dipercaya selama puluhan tahun.",
+    "Rasakan cita rasa autentik Bakpia 3 Generasi. Produk bakpia premium buatan tangan dengan resep tradisional yang telah dipercaya selama puluhan tahun.",
   keywords: [
     "bakpia jogja",
     "bakpia istimewa",
@@ -20,9 +20,9 @@ export const metadata: Metadata = {
     "makanan tradisional indonesia",
     "souvenir jogja",
   ],
-  authors: [{ name: "Bakpia Jogja Istimewa" }],
-  creator: "Bakpia Jogja Istimewa",
-  publisher: "Bakpia Jogja Istimewa",
+  authors: [{ name: "Bakpia 3 Generasi" }],
+  creator: "Bakpia 3 Generasi",
+  publisher: "Bakpia 3 Generasi",
   formatDetection: {
     email: false,
     address: false,
@@ -36,22 +36,22 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
     url: "/",
-    siteName: "Bakpia Jogja Istimewa",
-    title: "Bakpia Jogja Istimewa - Premium Indonesian Bakpia",
+    siteName: "Bakpia 3 Generasi",
+    title: "Bakpia 3 Generasi - Premium Indonesian Bakpia",
     description:
-      "Rasakan cita rasa autentik Bakpia Jogja Istimewa dengan resep tradisional.",
+      "Rasakan cita rasa autentik Bakpia 3 Generasi dengan resep tradisional.",
     images: [
       {
         url: "/bakpia-hero.jpg",
         width: 1200,
         height: 630,
-        alt: "Bakpia Jogja Istimewa",
+        alt: "Bakpia 3 Generasi",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bakpia Jogja Istimewa",
+    title: "Bakpia 3 Generasi",
     description: "Bakpia Premium dari Yogyakarta",
     creator: "@bakpiajogja",
   },

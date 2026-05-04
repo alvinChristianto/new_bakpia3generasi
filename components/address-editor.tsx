@@ -22,19 +22,19 @@ export interface OfflineStore {
 const OFFLINE_STORES: OfflineStore[] = [
   {
     id: "1",
-    name: "Bakpia Jogja Istimewa - Malioboro",
+    name: "Bakpia 3 Generasi - Malioboro",
     address: "Jalan Malioboro No. 123, Yogyakarta",
     phone: "+62 274-512345",
   },
   {
     id: "2",
-    name: "Bakpia Jogja Istimewa - Kota Baru",
+    name: "Bakpia 3 Generasi - Kota Baru",
     address: "Jalan Kota Baru No. 45, Yogyakarta",
     phone: "+62 274-623456",
   },
   {
     id: "3",
-    name: "Bakpia Jogja Istimewa - Borobudur",
+    name: "Bakpia 3 Generasi - Borobudur",
     address: "Jalan Borobudur No. 67, Magelang",
     phone: "+62 293-734567",
   },

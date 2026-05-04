@@ -7,8 +7,8 @@ export function HeroSection() {
   return (
     <section className="relative w-full h-96 md:h-[500px] overflow-hidden bg-gradient-to-r from-primary/10 to-accent/10">
       <Image
-        src="/bakpia-heroj.jpg"
-        alt="Bakpia Jogja Istimewa - Premium Indonesian Bakpia"
+        src="/bakpia-hero.webp"
+        alt="Bakpia 3 Generasi - Premium Indonesian Bakpia"
         fill
         className="object-cover"
         priority

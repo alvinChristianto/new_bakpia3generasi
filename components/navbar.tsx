@@ -41,7 +41,7 @@ export function Navbar() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="text-xl font-bold text-primary">
-              Bakpia Jogja Istimewa
+              Bakpia 3 Generasi
             </Link>
           </div>
 

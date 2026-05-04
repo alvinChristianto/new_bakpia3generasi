@@ -379,21 +379,21 @@ export default function CheckoutPage() {
                               const stores = [
                                 {
                                   id: "1",
-                                  name: "Bakpia Jogja Istimewa - Malioboro",
+                                  name: "Bakpia 3 Generasi - Malioboro",
                                   fullAddress:
                                     "store Jalan Malioboro No. 123, Yogyakarta",
                                   phone: "+62 274-512345",
                                 },
                                 {
                                   id: "2",
-                                  name: "Bakpia Jogja Istimewa - Kota Baru",
+                                  name: "Bakpia 3 Generasi - Kota Baru",
                                   fullAddress:
                                     "store  Jalan Kota Baru No. 45, Yogyakarta",
                                   phone: "+62 274-623456",
                                 },
                                 {
                                   id: "3",
-                                  name: "Bakpia Jogja Istimewa - Borobudur",
+                                  name: "Bakpia 3 Generasi - Borobudur",
                                   fullAddress:
                                     "store  Jalan Borobudur No. 67, Magelang",
                                   phone: "+62 293-734567",
