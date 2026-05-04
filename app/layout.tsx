@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://bakpiajogja.com"),
+  metadataBase: new URL("https://bakpia3generasi.com"),
   alternates: {
     canonical: "/",
   },
@@ -39,10 +39,10 @@ export const metadata: Metadata = {
     siteName: "Bakpia 3 Generasi",
     title: "Bakpia 3 Generasi - Premium Indonesian Bakpia",
     description:
-      "Rasakan cita rasa autentik Bakpia 3 Generasi dengan resep tradisional.",
+      "Bakpia 3 Generasi, oleh-oleh dari yogyakarta yang enak dan terjangkau",
     images: [
       {
-        url: "/bakpia-hero.jpg",
+        url: "/bakpia-hero.webp",
         width: 1200,
         height: 630,
         alt: "Bakpia 3 Generasi",
@@ -52,21 +52,22 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Bakpia 3 Generasi",
-    description: "Bakpia Premium dari Yogyakarta",
+    description:
+      "Bakpia 3 Generasi, oleh-oleh dari yogyakarta yang enak dan terjangkau",
     creator: "@bakpiajogja",
   },
   icons: {
     icon: [
       {
-        url: "/icon-light-32x32.png",
+        url: "/favicon.ico",
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/icon-dark-32x32.png",
+        url: "/favicon.ico",
         media: "(prefers-color-scheme: dark)",
       },
       {
-        url: "/icon.svg",
+        url: "/favicon.ico",
         type: "image/svg+xml",
       },
     ],
