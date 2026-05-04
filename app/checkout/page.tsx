@@ -124,11 +124,10 @@ export default function CheckoutPage() {
       // 3. Trigger Midtrans Snap
       // Note: response is resultToken. We check for snap_token specifically
       // if (response?.snap_token) {
-        console.log(response);
+      console.log(response);
       if (response?.data?.snap_token) {
         // window.snap.pay(response.data.snap_token, {
         (window as any).snap.pay(response.data.snap_token, {
-          
           onSuccess: function (result: any) {
             // Success doesn't necessarily need a modal if you are redirecting immediately,
             // but you can show it for 2 seconds then push the router.
@@ -210,6 +209,29 @@ export default function CheckoutPage() {
     setIsFormValid(isValid);
   };
 
+  const stores = [
+    {
+      id: "1",
+      name: "Bakpia 3 Generasi - Jl Magelang",
+      fullAddress:
+        "Jl. Magelang No.Km. 5,8, Kutu Patran, Sinduadi, Kec. Mlati, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55284",
+      phone: "0821 3806 0002",
+    },
+    {
+      id: "2",
+      name: "Bakpia 3 Generasi - Jl Mataram ",
+      fullAddress:
+        "Jl. Mataram No.50, Suryatmajan, Kec. Danurejan, Kota Yogyakarta, Daerah Istimewa Yogyakarta 55213",
+      phone: "0823 4231 2204",
+    },
+    {
+      id: "3",
+      name: "Bakpia 3 Generasi - The Cabin Hotel Tugu ",
+      fullAddress:
+        "Jl. Margo Utomo No.9, Gowongan, Kec. Jetis, Kota Yogyakarta, Daerah Istimewa Yogyakarta 55232",
+      phone: "0821 3806 0002",
+    },
+  ];
   if (cart.length === 0) {
     return (
       <>
@@ -288,7 +310,10 @@ export default function CheckoutPage() {
                       {/* Product Image */}
                       <div className="relative w-24 h-24 bg-background rounded-md overflow-hidden flex-shrink-0">
                         <Image
-                          src={`${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${item.image[0]}`  || "/placeholder.svg"}
+                          src={
+                            `${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${item.image[0]}` ||
+                            "/placeholder.svg"
+                          }
                           alt={item.name}
                           fill
                           className="object-cover"
@@ -375,35 +400,7 @@ export default function CheckoutPage() {
                             Toko:
                           </p>
                           <p className="text-muted-foreground text-xs mb-2">
-                            {(() => {
-                              const stores = [
-                                {
-                                  id: "1",
-                                  name: "Bakpia 3 Generasi - Malioboro",
-                                  fullAddress:
-                                    "store Jalan Malioboro No. 123, Yogyakarta",
-                                  phone: "+62 274-512345",
-                                },
-                                {
-                                  id: "2",
-                                  name: "Bakpia 3 Generasi - Kota Baru",
-                                  fullAddress:
-                                    "store  Jalan Kota Baru No. 45, Yogyakarta",
-                                  phone: "+62 274-623456",
-                                },
-                                {
-                                  id: "3",
-                                  name: "Bakpia 3 Generasi - Borobudur",
-                                  fullAddress:
-                                    "store  Jalan Borobudur No. 67, Magelang",
-                                  phone: "+62 293-734567",
-                                },
-                              ];
-                              const store = stores.find(
-                                (s) => s.id === address.storeId,
-                              );
-                              return store?.name;
-                            })()}
+                            {stores.find((s) => s.id === address.storeId)?.name}
                           </p>
                         </>
                       )}

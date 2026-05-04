@@ -22,21 +22,24 @@ export interface OfflineStore {
 const OFFLINE_STORES: OfflineStore[] = [
   {
     id: "1",
-    name: "Bakpia 3 Generasi - Malioboro",
-    address: "Jalan Malioboro No. 123, Yogyakarta",
-    phone: "+62 274-512345",
+    name: "Bakpia 3 Generasi - Jl Magelang",
+    address:
+      "Jl. Magelang No.Km. 5,8, Kutu Patran, Sinduadi, Kec. Mlati, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55284",
+    phone: "0821 3806 0002",
   },
   {
     id: "2",
-    name: "Bakpia 3 Generasi - Kota Baru",
-    address: "Jalan Kota Baru No. 45, Yogyakarta",
-    phone: "+62 274-623456",
+    name: "Bakpia 3 Generasi - Jl Mataram ",
+    address:
+      "Jl. Mataram No.50, Suryatmajan, Kec. Danurejan, Kota Yogyakarta, Daerah Istimewa Yogyakarta 55213",
+    phone: "0823 4231 2204",
   },
   {
     id: "3",
-    name: "Bakpia 3 Generasi - Borobudur",
-    address: "Jalan Borobudur No. 67, Magelang",
-    phone: "+62 293-734567",
+    name: "Bakpia 3 Generasi - The Cabin Hotel Tugu ",
+    address:
+      "Jl. Margo Utomo No.9, Gowongan, Kec. Jetis, Kota Yogyakarta, Daerah Istimewa Yogyakarta 55232",
+    phone: "0821 3806 0002",
   },
 ];
 
