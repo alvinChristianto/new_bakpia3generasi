@@ -1,4 +1,4 @@
-import { Facebook, Instagram, Tiktok, Phone, Mail } from "lucide-react";
+import { Facebook, Instagram, Phone, Mail } from "lucide-react";
 import Link from "next/link";
 
 export function Footer() {
