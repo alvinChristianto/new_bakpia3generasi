@@ -8,12 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useCart } from "@/hooks/use-cart";
+import { useShipping } from "@/hooks/use-shipping";
 import { CheckoutForm, type CustomerData } from "@/components/checkout-form";
-import { AddressEditor, type AddressData } from "@/components/address-editor";
-import * as Dialog from "@radix-ui/react-dialog"; // Or your Shadcn Dialog component
-
+import { AddressEditor } from "@/components/address-editor";
 import { ApiResponse } from "../api/types";
-
 import {
   ChevronLeft,
   Package,
@@ -24,13 +22,15 @@ import {
   Trash2,
   ReceiptText,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import Script from "next/script";
 import { checkoutOrder } from "../api/endpoints/checkout";
 
-// Define what the Laravel 'data' object looks like
+// ─── Midtrans checkout response shape ─────────────────────────────────────────
+
 interface CheckoutData {
-  message: string; // Added this based on your JSON
+  message: string;
   snap_token: string;
   reference: {
     invoice_number_backend: string;
@@ -38,47 +38,51 @@ interface CheckoutData {
   };
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatRupiah(amount: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
+
+function removeLastPartOrderId(orderId: string): string {
+  const parts = orderId.split("-");
+  if (parts.length <= 1) return orderId;
+  return parts.slice(0, -1).join("-");
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, subtotal, clearCart, removeItem, updateQuantity } = useCart();
+  const { cart, subtotal, removeItem, updateQuantity } = useCart();
+  const { address, shippingCost } = useShipping();
+
   const [isAddressEditorOpen, setIsAddressEditorOpen] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [isFormValid, setIsFormValid] = useState(false);
-  const [address, setAddress] = useState<AddressData>({
-    type: "delivery",
-    fullAddress: "Jalan Malioboro No. 123, Yogyakarta 55271",
-  });
-  const [shippingCost, setShippingCost] = useState(50000); // You can set this based on your logic or API response
+  const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({
     title: "",
     message: "",
     type: "info",
   });
-  const [isLoading, setIsLoading] = useState(false);
 
   const MIDTRANS_CLIENT_KEY = process.env.NEXT_PUBLIC_MIDTRANS_CLIENTKEY;
   const MIDTRANS_SNAP_URL = process.env.NEXT_PUBLIC_SNAP_URL;
 
-  // Inside your component
-
+  // ── Totals ──────────────────────────────────────────────────────────────────
   const tax = useMemo(() => Math.round(subtotal * 0.1), [subtotal]);
-
-  // This is your "Parent Variable"
   const grandTotal = useMemo(
     () => subtotal + shippingCost + tax,
     [subtotal, shippingCost, tax],
   );
-  console.log("Total calculated:", grandTotal);
 
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
+  // ── Modal helper ────────────────────────────────────────────────────────────
   const triggerModal = (
     title: string,
     message: string,
@@ -88,19 +92,10 @@ export default function CheckoutPage() {
     setIsModalOpen(true);
   };
 
-  const removeLastPartOrderId = (orderId: string): string => {
-    // Splits "BAK-20260217-ABCD-1234" into ["BAK", "20260217", "ABCD"]
-    const parts = orderId.split("-");
-    if (parts.length <= 1) return orderId;
-
-    // Removes the last random suffix we added in Laravel
-    return parts.slice(0, -1).join("-");
-  };
-
+  // ── Payment ─────────────────────────────────────────────────────────────────
   const handleProceedPayment = async () => {
-    if (isLoading) return; // Guard clause
-
-    setIsLoading(true); // Start loading
+    if (isLoading) return;
+    setIsLoading(true);
 
     try {
       const payload = {
@@ -112,51 +107,44 @@ export default function CheckoutPage() {
           quantity: item.quantity,
           image: item.image,
         })),
-        shippingCost: shippingCost,
+        shippingCost,
         taxAmount: tax,
-        customerData: customerData,
-        address: address,
+        customerData,
+        address,
       };
 
       const response = (await checkoutOrder(
         payload,
       )) as ApiResponse<CheckoutData>;
-      // 3. Trigger Midtrans Snap
-      // Note: response is resultToken. We check for snap_token specifically
-      // if (response?.snap_token) {
-      console.log(response);
+
       if (response?.data?.snap_token) {
-        // window.snap.pay(response.data.snap_token, {
         (window as any).snap.pay(response.data.snap_token, {
-          onSuccess: function (result: any) {
-            // Success doesn't necessarily need a modal if you are redirecting immediately,
-            // but you can show it for 2 seconds then push the router.
+          onSuccess: (result: any) => {
             triggerModal(
               "Pembayaran Berhasil",
               "Pesanan Anda sedang kami proses.",
               "success",
             );
-
             setTimeout(() => {
               const cleanOrderId = removeLastPartOrderId(result.order_id);
               router.push(`/payment-success?order_id=${cleanOrderId}`);
             }, 500);
           },
-          onPending: function (result: any) {
+          onPending: () => {
             triggerModal(
               "Menunggu Pembayaran",
               "Silakan selesaikan pembayaran di aplikasi bank Anda.",
               "warning",
             );
           },
-          onError: function (result: any) {
+          onError: () => {
             triggerModal(
               "Pembayaran Gagal",
               "Saldo tidak cukup atau transaksi ditolak.",
               "fail",
             );
           },
-          onClose: function () {
+          onClose: () => {
             triggerModal(
               "Transaksi Dibatalkan",
               "Anda menutup jendela pembayaran sebelum selesai.",
@@ -165,16 +153,13 @@ export default function CheckoutPage() {
           },
         });
       }
-    } catch (error) {
+    } catch {
       triggerModal(
         "Sistem Error",
         "Gagal menghubungi server. Coba lagi nanti.",
         "fail",
       );
-      setIsLoading(false);
     } finally {
-      // If the snap window opens, we usually keep it loading
-      // or reset based on your preference.
       setIsLoading(false);
     }
   };
@@ -182,76 +167,38 @@ export default function CheckoutPage() {
   const handleCompleteOrder = async () => {
     if (!isFormValid || !customerData) {
       alert(
-        "Silakan lengkapi semua data penerima (nama penerima, email, dan nomor telepon) terlebih dahulu",
+        "Silakan lengkapi semua data penerima (nama, email, dan nomor telepon) terlebih dahulu",
       );
       return;
     }
-
-    try {
-      await handleProceedPayment();
-      //just wait and handleProceedPayment will trigger the modal and redirect on success, so we don't need to do anything else here.
-    } catch (error) {
-      console.error("Order completion error:", error);
+    if (!address) {
+      alert(
+        "Silakan pilih alamat pengiriman atau toko pengambilan terlebih dahulu",
+      );
+      return;
     }
+    await handleProceedPayment();
   };
 
-  const handleAddressChange = (newAddress: AddressData) => {
-    setAddress(newAddress);
-    console.log("Address updated in parent:", newAddress);
-    if (newAddress.type === "delivery") {
-      setShippingCost(50000); // Set shipping cost for delivery
-    } else {
-      setShippingCost(0); // No shipping cost for pickup
-    }
-  };
-
-  const handleValidationChange = (isValid: boolean) => {
-    setIsFormValid(isValid);
-  };
-
-  const stores = [
-    {
-      id: "1",
-      name: "Bakpia 3 Generasi - Jl Magelang",
-      fullAddress:
-        "Jl. Magelang No.Km. 5,8, Kutu Patran, Sinduadi, Kec. Mlati, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55284",
-      phone: "0821 3806 0002",
-    },
-    {
-      id: "2",
-      name: "Bakpia 3 Generasi - Jl Mataram ",
-      fullAddress:
-        "Jl. Mataram No.50, Suryatmajan, Kec. Danurejan, Kota Yogyakarta, Daerah Istimewa Yogyakarta 55213",
-      phone: "0823 4231 2204",
-    },
-    {
-      id: "3",
-      name: "Bakpia 3 Generasi - The Cabin Hotel Tugu ",
-      fullAddress:
-        "Jl. Margo Utomo No.9, Gowongan, Kec. Jetis, Kota Yogyakarta, Daerah Istimewa Yogyakarta 55232",
-      phone: "0821 3806 0002",
-    },
-  ];
+  // ── Empty cart ───────────────────────────────────────────────────────────────
   if (cart.length === 0) {
     return (
       <>
         <Navbar />
         <main className="min-h-screen bg-background">
-          <div className="max-w-7xl mx-auto px-4 py-16">
-            <div className="text-center">
-              <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                Keranjang Kosong
-              </h1>
-              <p className="text-muted-foreground mb-8">
-                Tidak ada produk untuk checkout.
-              </p>
-              <Link href="/">
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  Kembali Berbelanja
-                </Button>
-              </Link>
-            </div>
+          <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+            <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Keranjang Kosong
+            </h1>
+            <p className="text-muted-foreground mb-8">
+              Tidak ada produk untuk checkout.
+            </p>
+            <Link href="/">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Kembali Berbelanja
+              </Button>
+            </Link>
           </div>
         </main>
         <Footer />
@@ -259,11 +206,12 @@ export default function CheckoutPage() {
     );
   }
 
+  // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
       <Navbar />
-
       <Script src={MIDTRANS_SNAP_URL} data-client-key={MIDTRANS_CLIENT_KEY} />
+
       <main className="min-h-screen bg-background py-8">
         <div className="max-w-6xl mx-auto px-4">
           {/* Header */}
@@ -284,18 +232,18 @@ export default function CheckoutPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Order Items */}
+            {/* ── Left: Form + Cart ── */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Customer Data Section */}
+              {/* Customer form */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <CheckoutForm
                   onDataChange={setCustomerData}
                   initialData={customerData || undefined}
-                  onValidationChange={handleValidationChange}
+                  onValidationChange={setIsFormValid}
                 />
               </div>
 
-              {/* Order Items Section */}
+              {/* Cart items */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <Package className="w-5 h-5" />
@@ -307,7 +255,6 @@ export default function CheckoutPage() {
                       key={item.id}
                       className="flex gap-4 p-4 bg-muted rounded-lg border border-border/50 hover:border-primary/30 transition"
                     >
-                      {/* Product Image */}
                       <div className="relative w-24 h-24 bg-background rounded-md overflow-hidden flex-shrink-0">
                         <Image
                           src={
@@ -320,8 +267,6 @@ export default function CheckoutPage() {
                           unoptimized
                         />
                       </div>
-
-                      {/* Product Details */}
                       <div className="flex-1">
                         <h3 className="font-semibold text-foreground">
                           {item.name}
@@ -332,8 +277,6 @@ export default function CheckoutPage() {
                         <p className="text-primary font-bold mt-2">
                           {formatRupiah(item.price * item.quantity)}
                         </p>
-
-                        {/* Quantity Controls */}
                         <div className="flex items-center gap-2 mt-3">
                           <button
                             onClick={() =>
@@ -371,76 +314,80 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Sidebar: Address and Billing Summary */}
+            {/* ── Right: Address + Summary ── */}
             <div className="space-y-6">
-              {/* Address/Pickup Section */}
+              {/* Address card */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                   <Truck className="w-5 h-5" />
-                  Alamat Pengiriman/Pengambilan
+                  Pengiriman / Pengambilan
                 </h2>
-                <div className="space-y-3">
-                  {address.type === "delivery" ? (
-                    <>
-                      <div className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full mb-2">
-                        Pengiriman
-                      </div>
-                      <p className="text-muted-foreground text-sm">
-                        {address.fullAddress}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full mb-2">
-                        Pengambilan di Toko
-                      </div>
-                      {address.storeId && (
-                        <>
-                          <p className="text-foreground font-medium text-sm mb-1">
-                            Toko:
-                          </p>
-                          <p className="text-muted-foreground text-xs mb-2">
-                            {stores.find((s) => s.id === address.storeId)?.name}
-                          </p>
-                        </>
-                      )}
-                      <p className="text-foreground font-medium text-sm mb-1">
-                        Jadwal Pengambilan:
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        {address.pickupDate
-                          ? new Date(address.pickupDate).toLocaleDateString(
-                              "id-ID",
-                              {
-                                weekday: "long",
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              },
-                            )
-                          : "-"}
-                      </p>
-                      {address.pickupTime && (
-                        <p className="text-muted-foreground text-sm">
-                          Pukul {address.pickupTime} WIB
-                        </p>
-                      )}
-                    </>
-                  )}
-                  <Button
-                    onClick={() => setIsAddressEditorOpen(true)}
-                    variant="outline"
-                    className="w-full bg-transparent"
-                  >
-                    Ubah Alamat/Pengambilan
-                  </Button>
-                </div>
+
+                {!address ? (
+                  <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mb-3">
+                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-amber-700">
+                      Belum ada alamat dipilih. Klik tombol di bawah untuk
+                      memilih.
+                    </p>
+                  </div>
+                ) : address.type === "delivery" ? (
+                  <div className="space-y-2 mb-3">
+                    <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
+                      Pengiriman
+                    </span>
+                    <p className="text-sm text-foreground font-medium">
+                      {address.courier.service_name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {address.fullAddress}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      {formatRupiah(address.courier.cost)} · Est.{" "}
+                      {address.courier.etd} hari
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 mb-3">
+                    <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
+                      Pengambilan di Toko
+                    </span>
+                    <p className="text-sm text-foreground font-medium">
+                      {address.storeName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {address.storeAddress}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(address.pickupDate).toLocaleDateString(
+                        "id-ID",
+                        {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        },
+                      )}{" "}
+                      pukul {address.pickupTime} WIB
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  onClick={() => setIsAddressEditorOpen(true)}
+                  variant="outline"
+                  className="w-full bg-transparent"
+                >
+                  {address
+                    ? "Ubah Alamat/Pengambilan"
+                    : "Pilih Alamat/Pengambilan"}
+                </Button>
               </div>
 
-              {/* Billing Summary Section */}
+              {/* Billing summary */}
               <div className="bg-card border border-border rounded-lg p-6 sticky top-4">
                 <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                  {address.type === "pickup" ? (
+                  {address?.type === "pickup" ? (
                     <ReceiptText className="w-5 h-5" />
                   ) : (
                     <DollarSign className="w-5 h-5" />
@@ -455,16 +402,18 @@ export default function CheckoutPage() {
                       {formatRupiah(subtotal)}
                     </span>
                   </div>
-                  {address.type === "delivery" && (
+
+                  {address?.type === "delivery" && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
-                        Biaya Pengiriman
+                        Ongkir ({address.courier.service_name})
                       </span>
                       <span className="text-foreground font-medium">
                         {formatRupiah(shippingCost)}
                       </span>
                     </div>
                   )}
+
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Pajak (10%)</span>
                     <span className="text-foreground font-medium">
@@ -481,11 +430,12 @@ export default function CheckoutPage() {
                     {formatRupiah(grandTotal)}
                   </span>
                 </div>
+
                 <Button
                   onClick={handleCompleteOrder}
-                  disabled={!isFormValid || isLoading} // Disable if invalid OR loading
+                  disabled={!isFormValid || isLoading || !address}
                   className={`w-full py-3 font-bold text-lg transition flex items-center justify-center gap-2 ${
-                    isFormValid && !isLoading
+                    isFormValid && !isLoading && address
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
                       : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
                   }`}
@@ -500,9 +450,11 @@ export default function CheckoutPage() {
                   )}
                 </Button>
 
-                {!isFormValid && (
+                {(!isFormValid || !address) && (
                   <p className="text-xs text-muted-foreground text-center mt-3">
-                    Lengkapi data penerima untuk melanjutkan
+                    {!address
+                      ? "Pilih alamat pengiriman untuk melanjutkan"
+                      : "Lengkapi data penerima untuk melanjutkan"}
                   </p>
                 )}
               </div>
@@ -510,12 +462,15 @@ export default function CheckoutPage() {
           </div>
         </div>
       </main>
+
+      {/* Address Editor Modal (delivery → navigates away; pickup → stays in modal) */}
       <AddressEditor
         isOpen={isAddressEditorOpen}
         onClose={() => setIsAddressEditorOpen(false)}
-        onSave={handleAddressChange}
-        initialData={address}
+        onSave={(newAddress) => useShipping.getState().setAddress(newAddress)}
+        currentAddress={address}
       />
+
       <Footer />
     </>
   );
