@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useCart } from "@/hooks/use-cart";
-import { useShipping } from "@/hooks/use-shipping";
+import {
+  useShipping,
+  getShippingCost,
+  isCourierStale,
+} from "@/hooks/use-shipping";
 import { CheckoutForm, type CustomerData } from "@/components/checkout-form";
 import { AddressEditor } from "@/components/address-editor";
 import { ApiResponse } from "../api/types";
@@ -59,7 +63,20 @@ function removeLastPartOrderId(orderId: string): string {
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, subtotal, removeItem, updateQuantity } = useCart();
-  const { address, shippingCost } = useShipping();
+  const { address, clearCourier } = useShipping();
+  const shippingCost = getShippingCost(address);
+  const courierStale = isCourierStale(address);
+
+  // ── Wrap quantity handlers to clear courier on change ───────────────────────
+  const handleUpdateQuantity = (id: string, qty: number) => {
+    updateQuantity(id, qty);
+    clearCourier();
+  };
+
+  const handleRemoveItem = (id: string) => {
+    removeItem(id);
+    clearCourier();
+  };
 
   const [isAddressEditorOpen, setIsAddressEditorOpen] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
@@ -280,7 +297,7 @@ export default function CheckoutPage() {
                         <div className="flex items-center gap-2 mt-3">
                           <button
                             onClick={() =>
-                              updateQuantity(
+                              handleUpdateQuantity(
                                 item.id,
                                 Math.max(1, item.quantity - 1),
                               )
@@ -294,14 +311,14 @@ export default function CheckoutPage() {
                           </span>
                           <button
                             onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
+                              handleUpdateQuantity(item.id, item.quantity + 1)
                             }
                             className="p-1 hover:bg-background rounded transition"
                           >
                             <Plus className="w-4 h-4 text-foreground" />
                           </button>
                           <button
-                            onClick={() => removeItem(item.id)}
+                            onClick={() => handleRemoveItem(item.id)}
                             className="ml-auto p-1 hover:bg-destructive/10 rounded transition"
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
@@ -336,16 +353,32 @@ export default function CheckoutPage() {
                     <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
                       Pengiriman
                     </span>
-                    <p className="text-sm text-foreground font-medium">
-                      {address.courier.service_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {address.fullAddress}
-                    </p>
-                    <p className="text-sm font-semibold text-primary">
-                      {formatRupiah(address.courier.cost)} · Est.{" "}
-                      {address.courier.etd} hari
-                    </p>
+                    {courierStale ? (
+                      <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-700">
+                            Jumlah produk berubah
+                          </p>
+                          <p className="text-xs text-amber-600 mt-0.5">
+                            Silakan pilih ulang kurir pengiriman
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm text-foreground font-medium">
+                          {address.courier?.service_name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {address.fullAddress}
+                        </p>
+                        <p className="text-sm font-semibold text-primary">
+                          {formatRupiah(address.courier?.cost ?? 0)} · Est.{" "}
+                          {address.courier?.etd} hari
+                        </p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2 mb-3">
@@ -403,7 +436,7 @@ export default function CheckoutPage() {
                     </span>
                   </div>
 
-                  {address?.type === "delivery" && (
+                  {address?.type === "delivery" && address.courier && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
                         Ongkir ({address.courier.service_name})
@@ -415,7 +448,7 @@ export default function CheckoutPage() {
                   )}
 
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Pajak (10%)</span>
+                    <span className="text-muted-foreground">Biaya Admin</span>
                     <span className="text-foreground font-medium">
                       {formatRupiah(tax)}
                     </span>
@@ -433,9 +466,11 @@ export default function CheckoutPage() {
 
                 <Button
                   onClick={handleCompleteOrder}
-                  disabled={!isFormValid || isLoading || !address}
+                  disabled={
+                    !isFormValid || isLoading || !address || courierStale
+                  }
                   className={`w-full py-3 font-bold text-lg transition flex items-center justify-center gap-2 ${
-                    isFormValid && !isLoading && address
+                    isFormValid && !isLoading && address && !courierStale
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
                       : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
                   }`}
@@ -450,11 +485,13 @@ export default function CheckoutPage() {
                   )}
                 </Button>
 
-                {(!isFormValid || !address) && (
+                {(!isFormValid || !address || courierStale) && (
                   <p className="text-xs text-muted-foreground text-center mt-3">
-                    {!address
-                      ? "Pilih alamat pengiriman untuk melanjutkan"
-                      : "Lengkapi data penerima untuk melanjutkan"}
+                    {courierStale
+                      ? "Pilih ulang kurir pengiriman untuk melanjutkan"
+                      : !address
+                        ? "Pilih alamat pengiriman untuk melanjutkan"
+                        : "Lengkapi data penerima untuk melanjutkan"}
                   </p>
                 )}
               </div>

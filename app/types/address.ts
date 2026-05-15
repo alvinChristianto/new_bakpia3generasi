@@ -11,11 +11,10 @@ export interface DeliveryAddress {
   kecamatan_name: string;
   kelurahan_id: number;
   kelurahan_name: string;
-  /** Free-text street detail, e.g. "Jl. Malioboro No. 5 RT 02/03" */
   street_detail: string;
-  /** Full human-readable string built from the cascade + street detail */
   fullAddress: string;
-  courier: SelectedCourier;
+  /** null when courier was cleared due to quantity change */
+  courier: SelectedCourier | null;
 }
 
 // ─── Pickup address (in-store) ────────────────────────────────────────────────

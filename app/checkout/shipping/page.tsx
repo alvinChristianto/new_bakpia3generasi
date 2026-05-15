@@ -9,19 +9,20 @@ import {
   Truck,
   MapPin,
   Package,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useShipping } from "@/hooks/use-shipping";
 import { useCart } from "@/hooks/use-cart";
+import { calculatePackageDimensions } from "@/lib/package-dimensions";
 import {
   getProvinces,
   getCities,
   getDistricts,
   getSubDistricts,
   getExpressPricing,
-  
 } from "@/lib/kiriminaja";
 import type {
   Province,
@@ -32,16 +33,6 @@ import type {
 } from "@/types/kiriminaja";
 import type { DeliveryAddress } from "@/types/address";
 
-// ─── Your shop's fixed origin (kecamatan_id of your warehouse/store) ──────────
-// Replace with the actual kecamatan_id from the KiriminAja coverage area API
-const ORIGIN_KECAMATAN_ID = 548; // example: Pleret, Bantul, DIY
-const ORIGIN_KELURAHAN_ID = 31487; // example: Wonolelo
-
-// Default package dimensions (cm) — adjust for your bakpia packaging
-const DEFAULT_LENGTH = 20;
-const DEFAULT_WIDTH = 20;
-const DEFAULT_HEIGHT = 10;
-
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -50,7 +41,23 @@ function formatRupiah(amount: number) {
   }).format(amount);
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Toast ────────────────────────────────────────────────────────────────────
+
+function Toast({ message, visible }: { message: string; visible: boolean }) {
+  return (
+    <div
+      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-foreground text-background text-sm font-medium shadow-lg transition-all duration-300 whitespace-nowrap ${
+        visible
+          ? "opacity-100 translate-y-0"
+          : "opacity-0 translate-y-4 pointer-events-none"
+      }`}
+    >
+      {message}
+    </div>
+  );
+}
+
+// ─── SelectField ──────────────────────────────────────────────────────────────
 
 function SelectField({
   label,
@@ -70,8 +77,8 @@ function SelectField({
   placeholder: string;
 }) {
   return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-foreground">
+    <div className="space-y-1">
+      <label className="block text-xs font-medium text-foreground">
         {label}
       </label>
       <div className="relative">
@@ -79,7 +86,7 @@ function SelectField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled || loading}
-          className="w-full appearance-none px-3 py-2.5 pr-10 border border-border rounded-lg bg-background text-foreground text-sm transition focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full appearance-none px-2.5 py-2 pr-8 border border-border rounded-lg bg-background text-foreground text-xs transition focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <option value="">{loading ? "Memuat..." : placeholder}</option>
           {options.map((o) => (
@@ -88,17 +95,19 @@ function SelectField({
             </option>
           ))}
         </select>
-        <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+        <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
           {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            <ChevronDown className="w-3 h-3 text-muted-foreground" />
           )}
         </div>
       </div>
     </div>
   );
 }
+
+// ─── CourierCard ──────────────────────────────────────────────────────────────
 
 function CourierCard({
   rate,
@@ -112,42 +121,25 @@ function CourierCard({
   return (
     <button
       onClick={onSelect}
-      className={`w-full text-left p-4 rounded-lg border transition ${
+      className={`w-full text-left px-3 py-2.5 rounded-lg border transition flex items-center justify-between gap-2 ${
         selected
           ? "border-primary bg-primary/5 ring-1 ring-primary"
-          : "border-border bg-card hover:border-primary/50"
+          : "border-border bg-card hover:border-primary/40"
       }`}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-foreground text-sm truncate">
-            {rate.service_name}
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Estimasi {rate.etd} hari
-            {rate.cod && (
-              <span className="ml-2 inline-block px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-medium">
-                COD
-              </span>
-            )}
-            {rate.drop && (
-              <span className="ml-1 inline-block px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-medium">
-                Drop-off
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <p className="font-bold text-foreground">
-            {formatRupiah(Number(rate.cost))}
-          </p>
-          {Number(rate.discount_amount) > 0 && (
-            <p className="text-xs text-green-600">
-              Hemat {formatRupiah(rate.discount_amount)}
-            </p>
-          )}
-        </div>
+      <div className="flex items-center gap-2 min-w-0">
+        {selected ? (
+          <CheckCircle2 className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+        ) : (
+          <div className="w-3.5 h-3.5 rounded-full border-2 border-border flex-shrink-0" />
+        )}
+        <span className="text-xs font-medium text-foreground truncate">
+          {rate.service_name}
+        </span>
       </div>
+      <span className="text-xs font-bold text-primary flex-shrink-0">
+        {formatRupiah(Number(rate.cost))}
+      </span>
     </button>
   );
 }
@@ -156,20 +148,36 @@ function CourierCard({
 
 export default function ShippingPage() {
   const router = useRouter();
-  const { setAddress } = useShipping();
-  const { cart } = useCart();
+  const { address, setAddress } = useShipping();
+  const { cart, subtotal } = useCart();
 
-  // ── cascade state ──────────────────────────────────────────────────────────
+  // ── package dimensions derived from cart quantities ────────────────────────
+  const packageDimensions = calculatePackageDimensions(cart);
+
+  // ── pre-populate from existing delivery address in store ───────────────────
+  const existingDelivery = address?.type === "delivery" ? address : null;
+
+  // ── cascade state — init from store if available ───────────────────────────
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [subDistricts, setSubDistricts] = useState<SubDistrict[]>([]);
 
-  const [selectedProvince, setSelectedProvince] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
-  const [selectedDistrict, setSelectedDistrict] = useState("");
-  const [selectedSubDistrict, setSelectedSubDistrict] = useState("");
-  const [streetDetail, setStreetDetail] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState(
+    existingDelivery ? String(existingDelivery.province_id) : "",
+  );
+  const [selectedCity, setSelectedCity] = useState(
+    existingDelivery ? String(existingDelivery.city_id) : "",
+  );
+  const [selectedDistrict, setSelectedDistrict] = useState(
+    existingDelivery ? String(existingDelivery.kecamatan_id) : "",
+  );
+  const [selectedSubDistrict, setSelectedSubDistrict] = useState(
+    existingDelivery ? String(existingDelivery.kelurahan_id) : "",
+  );
+  const [streetDetail, setStreetDetail] = useState(
+    existingDelivery ? existingDelivery.street_detail : "",
+  );
 
   // ── loading states ─────────────────────────────────────────────────────────
   const [loadingProvinces, setLoadingProvinces] = useState(false);
@@ -183,11 +191,13 @@ export default function ShippingPage() {
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
   const [ratesError, setRatesError] = useState<string | null>(null);
 
-  // ── total weight from cart ─────────────────────────────────────────────────
-  const totalWeight = cart.reduce(
-    (acc, item) => acc + (item.weight ?? 500) * item.quantity, // fallback 500g per item if no weight
-    0,
-  );
+  // ── toast ──────────────────────────────────────────────────────────────────
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const showToast = () => {
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 3000);
+  };
 
   // ── load provinces on mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -198,7 +208,60 @@ export default function ShippingPage() {
       .finally(() => setLoadingProvinces(false));
   }, []);
 
-  // ── cascade: province → cities ─────────────────────────────────────────────
+  // ── pre-load cascade dropdowns when returning with existing address ─────────
+  useEffect(() => {
+    if (!existingDelivery) return;
+
+    // Load cities for saved province
+    setLoadingCities(true);
+    getCities(existingDelivery.province_id)
+      .then(setCities)
+      .catch(console.error)
+      .finally(() => setLoadingCities(false));
+
+    // Load districts for saved city
+    setLoadingDistricts(true);
+    getDistricts(existingDelivery.city_id)
+      .then(setDistricts)
+      .catch(console.error)
+      .finally(() => setLoadingDistricts(false));
+
+    // Load sub-districts for saved district
+    setLoadingSubDistricts(true);
+    getSubDistricts(existingDelivery.kecamatan_id)
+      .then(setSubDistricts)
+      .catch(console.error)
+      .finally(() => setLoadingSubDistricts(false));
+
+    // Auto-trigger pricing if courier was cleared due to quantity change
+    if (existingDelivery.courier === null) {
+      setLoadingRates(true);
+      getExpressPricing({
+        destination: existingDelivery.kecamatan_id,
+        subdistrict_destination: existingDelivery.kelurahan_id,
+        item_value: String(subtotal),
+        weight: packageDimensions.weight,
+        length: packageDimensions.length,
+        width: packageDimensions.width,
+        height: packageDimensions.height,
+      })
+        .then((results) => {
+          if (!results || results.length === 0) {
+            setRatesError(
+              "Tidak ada layanan pengiriman tersedia untuk area ini.",
+            );
+          } else {
+            setRates(results);
+            showToast();
+          }
+        })
+        .catch(() => setRatesError("Gagal memuat tarif pengiriman. Coba lagi."))
+        .finally(() => setLoadingRates(false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount only
+
+  // ── cascade handlers ───────────────────────────────────────────────────────
   const handleProvinceChange = useCallback((val: string) => {
     setSelectedProvince(val);
     setSelectedCity("");
@@ -217,7 +280,6 @@ export default function ShippingPage() {
       .finally(() => setLoadingCities(false));
   }, []);
 
-  // ── cascade: city → districts ──────────────────────────────────────────────
   const handleCityChange = useCallback((val: string) => {
     setSelectedCity(val);
     setSelectedDistrict("");
@@ -228,13 +290,12 @@ export default function ShippingPage() {
     setSelectedRate(null);
     if (!val) return;
     setLoadingDistricts(true);
-     getDistricts(Number(val)) 
+    getDistricts(Number(val))
       .then(setDistricts)
       .catch(console.error)
       .finally(() => setLoadingDistricts(false));
   }, []);
 
-  // ── cascade: district → sub-districts ─────────────────────────────────────
   const handleDistrictChange = useCallback((val: string) => {
     setSelectedDistrict(val);
     setSelectedSubDistrict("");
@@ -249,7 +310,7 @@ export default function ShippingPage() {
       .finally(() => setLoadingSubDistricts(false));
   }, []);
 
-  // ── sub-district selected → fetch rates ───────────────────────────────────
+  // ── kelurahan → fetch rates + show toast ──────────────────────────────────
   const handleSubDistrictChange = useCallback(
     (val: string) => {
       setSelectedSubDistrict(val);
@@ -259,30 +320,31 @@ export default function ShippingPage() {
       if (!val) return;
       setLoadingRates(true);
       getExpressPricing({
-        origin: ORIGIN_KECAMATAN_ID,
-        subdistrict_origin: ORIGIN_KELURAHAN_ID,
         destination: Number(selectedDistrict),
         subdistrict_destination: Number(val),
-        weight: totalWeight > 0 ? totalWeight : 1000,
-        length: DEFAULT_LENGTH,
-        width: DEFAULT_WIDTH,
-        height: DEFAULT_HEIGHT,
+        item_value: String(subtotal),
+        weight: packageDimensions.weight,
+        length: packageDimensions.length,
+        width: packageDimensions.width,
+        height: packageDimensions.height,
       })
         .then((results) => {
-          if (results.length === 0) {
+          if (!results || results.length === 0) {
             setRatesError(
               "Tidak ada layanan pengiriman tersedia untuk area ini.",
             );
+          } else {
+            setRates(results);
+            showToast();
           }
-          setRates(results);
         })
         .catch(() => setRatesError("Gagal memuat tarif pengiriman. Coba lagi."))
         .finally(() => setLoadingRates(false));
     },
-    [selectedDistrict, totalWeight],
+    [selectedDistrict, subtotal, packageDimensions],
   );
 
-  // ── helpers: get name from id ──────────────────────────────────────────────
+  // ── name helpers ───────────────────────────────────────────────────────────
   const provinceName =
     provinces.find((p) => String(p.id) === selectedProvince)?.provinsi_name ??
     "";
@@ -296,16 +358,16 @@ export default function ShippingPage() {
       ?.kelurahan_name ?? "";
 
   // ── form validity ──────────────────────────────────────────────────────────
-  const isAddressComplete =
+  const isStreetValid = streetDetail.trim().length >= 10;
+  const canConfirm =
     !!selectedProvince &&
     !!selectedCity &&
     !!selectedDistrict &&
     !!selectedSubDistrict &&
-    streetDetail.trim().length >= 10;
+    isStreetValid &&
+    !!selectedRate;
 
-  const canConfirm = isAddressComplete && !!selectedRate;
-
-  // ── confirm → save to useShipping store → back ────────────────────────────
+  // ── confirm ────────────────────────────────────────────────────────────────
   const handleConfirm = () => {
     if (!selectedRate) return;
 
@@ -337,158 +399,156 @@ export default function ShippingPage() {
     router.push("/checkout");
   };
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
+  // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-background py-8">
+      <Toast
+        message="✓ Layanan pengiriman sudah diperbarui"
+        visible={toastVisible}
+      />
+
+      <main className="min-h-screen bg-background py-6">
         <div className="max-w-2xl mx-auto px-4">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <button
               onClick={() => router.push("/checkout")}
-              className="flex items-center gap-2 text-primary hover:text-primary/80 transition mb-6"
+              className="flex items-center gap-2 text-primary hover:text-primary/80 transition mb-4"
             >
-              <ChevronLeft className="w-5 h-5" />
-              <span className="font-medium">Kembali ke Checkout</span>
+              <ChevronLeft className="w-4 h-4" />
+              <span className="text-sm font-medium">Kembali ke Checkout</span>
             </button>
-            <div className="flex items-center gap-3 mb-2">
-              <Truck className="w-6 h-6 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">
+            <div className="flex items-center gap-2 mb-1">
+              <Truck className="w-5 h-5 text-primary" />
+              <h1 className="text-xl font-bold text-foreground">
                 Pilih Pengiriman
               </h1>
             </div>
-            <p className="text-muted-foreground text-sm">
-              Pilih alamat tujuan dan layanan kurir yang sesuai
+            <p className="text-xs text-muted-foreground">
+              Pilih alamat tujuan dan layanan kurir
             </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* ── Section 1: Address Cascade ── */}
-            <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-              <h2 className="font-semibold text-foreground flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" />
                 Alamat Tujuan
               </h2>
 
-              <SelectField
-                label="Provinsi"
-                value={selectedProvince}
-                onChange={handleProvinceChange}
-                options={provinces.map((p) => ({
-                  value: String(p.id),
-                  label: p.provinsi_name,
-                }))}
-                loading={loadingProvinces}
-                placeholder="Pilih Provinsi"
-              />
-
-              <SelectField
-                label="Kota / Kabupaten"
-                value={selectedCity}
-                onChange={handleCityChange}
-                options={cities.map((c) => ({
-                  value: String(c.id),
-                  label: `${c.type} ${c.kabupaten_name}`,
-                }))}
-                disabled={!selectedProvince}
-                loading={loadingCities}
-                placeholder={
-                  selectedProvince
-                    ? "Pilih Kota/Kabupaten"
-                    : "Pilih provinsi dulu"
-                }
-              />
-
-              <SelectField
-                label="Kecamatan"
-                value={selectedDistrict}
-                onChange={handleDistrictChange}
-                options={districts.map((d) => ({
-                  value: String(d.id),
-                  label: d.kecamatan_name,
-                }))}
-                disabled={!selectedCity}
-                loading={loadingDistricts}
-                placeholder={
-                  selectedCity ? "Pilih Kecamatan" : "Pilih kota dulu"
-                }
-              />
-
-              <SelectField
-                label="Kelurahan / Desa"
-                value={selectedSubDistrict}
-                onChange={handleSubDistrictChange}
-                options={subDistricts.map((s) => ({
-                  value: String(s.id),
-                  label: s.kelurahan_name,
-                }))}
-                disabled={!selectedDistrict}
-                loading={loadingSubDistricts}
-                placeholder={
-                  selectedDistrict ? "Pilih Kelurahan" : "Pilih kecamatan dulu"
-                }
-              />
-
-              {/* Street detail */}
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-foreground">
-                  Detail Alamat (Nama Jalan, No. Rumah, RT/RW) *
-                </label>
-                <textarea
-                  value={streetDetail}
-                  onChange={(e) => setStreetDetail(e.target.value)}
-                  rows={3}
-                  placeholder="Contoh: Jl. Malioboro No. 5, RT 02/RW 03"
-                  className="w-full px-3 py-2.5 border border-border rounded-lg bg-background text-foreground text-sm placeholder-muted-foreground resize-none transition focus:outline-none focus:ring-2 focus:ring-primary/50"
+              {/* 2-column grid for dropdowns */}
+              <div className="grid grid-cols-2 gap-2">
+                <SelectField
+                  label="Provinsi"
+                  value={selectedProvince}
+                  onChange={handleProvinceChange}
+                  options={provinces.map((p) => ({
+                    value: String(p.id),
+                    label: p.provinsi_name,
+                  }))}
+                  loading={loadingProvinces}
+                  placeholder="Pilih Provinsi"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Minimal 10 karakter · {streetDetail.trim().length} / 200
-                </p>
+
+                <SelectField
+                  label="Kota / Kabupaten"
+                  value={selectedCity}
+                  onChange={handleCityChange}
+                  options={cities.map((c) => ({
+                    value: String(c.id),
+                    label: `${c.type} ${c.kabupaten_name}`,
+                  }))}
+                  disabled={!selectedProvince}
+                  loading={loadingCities}
+                  placeholder={
+                    selectedProvince ? "Pilih Kota" : "Pilih provinsi dulu"
+                  }
+                />
+
+                <SelectField
+                  label="Kecamatan"
+                  value={selectedDistrict}
+                  onChange={handleDistrictChange}
+                  options={districts.map((d) => ({
+                    value: String(d.id),
+                    label: d.kecamatan_name,
+                  }))}
+                  disabled={!selectedCity}
+                  loading={loadingDistricts}
+                  placeholder={
+                    selectedCity ? "Pilih Kecamatan" : "Pilih kota dulu"
+                  }
+                />
+
+                <SelectField
+                  label="Kelurahan / Desa"
+                  value={selectedSubDistrict}
+                  onChange={handleSubDistrictChange}
+                  options={subDistricts.map((s) => ({
+                    value: String(s.id),
+                    label: s.kelurahan_name,
+                  }))}
+                  disabled={!selectedDistrict}
+                  loading={loadingSubDistricts}
+                  placeholder={
+                    selectedDistrict
+                      ? "Pilih Kelurahan"
+                      : "Pilih kecamatan dulu"
+                  }
+                />
               </div>
 
               {/* Address preview */}
-              {isAddressComplete && (
-                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                  <p className="text-xs font-medium text-primary mb-1">
-                    Alamat Lengkap:
-                  </p>
-                  <p className="text-sm text-foreground">
-                    {streetDetail.trim()}, {subDistrictName}, {districtName},{" "}
-                    {cityName}, {provinceName}
-                  </p>
-                </div>
-              )}
+              {selectedProvince &&
+                selectedCity &&
+                selectedDistrict &&
+                selectedSubDistrict && (
+                  <div className="p-2.5 bg-primary/5 border border-primary/20 rounded-lg">
+                    <p className="text-[10px] font-medium text-primary mb-0.5">
+                      Area terpilih:
+                    </p>
+                    <p className="text-xs text-foreground">
+                      {subDistrictName}, {districtName}, {cityName},{" "}
+                      {provinceName}
+                    </p>
+                  </div>
+                )}
             </div>
 
-            {/* ── Section 2: Courier Selection ── */}
-            <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-              <h2 className="font-semibold text-foreground flex items-center gap-2">
+            {/* ── Section 2: Courier + Street Detail ── */}
+            <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Package className="w-4 h-4 text-primary" />
                 Pilih Layanan Kurir
               </h2>
 
-              {!selectedSubDistrict && (
-                <p className="text-sm text-muted-foreground text-center py-6">
-                  Lengkapi alamat tujuan untuk melihat tarif pengiriman
+              {/* Empty state */}
+              {!selectedSubDistrict && !loadingRates && (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  Pilih kelurahan tujuan untuk melihat tarif pengiriman
                 </p>
               )}
 
+              {/* Loading */}
               {loadingRates && (
-                <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="text-sm">Mencari tarif pengiriman...</span>
+                <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-xs">Mencari tarif pengiriman...</span>
                 </div>
               )}
 
+              {/* Error */}
               {ratesError && !loadingRates && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <p className="text-sm text-destructive">{ratesError}</p>
+                  <p className="text-xs text-destructive">{ratesError}</p>
                 </div>
               )}
 
+              {/* Courier list — 2 columns */}
               {!loadingRates && rates.length > 0 && (
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                   {rates.map((rate, idx) => (
                     <CourierCard
                       key={`${rate.service}-${rate.service_type}-${idx}`}
@@ -502,18 +562,53 @@ export default function ShippingPage() {
                   ))}
                 </div>
               )}
+
+              {/* Street detail — shown after courier is selected */}
+              {selectedRate && (
+                <div className="space-y-1.5 pt-2 border-t border-border">
+                  <label className="block text-xs font-medium text-foreground">
+                    Detail Alamat (Nama Jalan, No. Rumah, RT/RW) *
+                  </label>
+                  <textarea
+                    value={streetDetail}
+                    onChange={(e) => setStreetDetail(e.target.value)}
+                    rows={3}
+                    placeholder="Contoh: Jl. Malioboro No. 5, RT 02/RW 03"
+                    className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground text-xs placeholder-muted-foreground resize-none transition focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                      streetDetail.trim().length > 0 && !isStreetValid
+                        ? "border-destructive"
+                        : "border-border"
+                    }`}
+                  />
+                  <div className="flex justify-between items-center">
+                    {streetDetail.trim().length > 0 && !isStreetValid ? (
+                      <p className="text-[10px] text-destructive">
+                        Minimal 10 karakter
+                      </p>
+                    ) : (
+                      <span />
+                    )}
+                    <p className="text-[10px] text-muted-foreground ml-auto">
+                      {streetDetail.trim().length} / 200
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* ── Confirm Button ── */}
-            <div className="bg-card border border-border rounded-lg p-6">
+            {/* ── Section 3: Confirm ── */}
+            <div className="bg-card border border-border rounded-lg p-4">
+              {/* Selected summary */}
               {selectedRate && (
-                <div className="flex justify-between text-sm mb-4 pb-4 border-b border-border">
-                  <span className="text-muted-foreground">Ongkir dipilih</span>
+                <div className="flex justify-between items-center mb-3 pb-3 border-b border-border">
+                  <span className="text-xs text-muted-foreground">
+                    Kurir dipilih
+                  </span>
                   <div className="text-right">
-                    <p className="font-semibold text-foreground">
+                    <p className="text-xs font-semibold text-foreground">
                       {selectedRate.service_name}
                     </p>
-                    <p className="text-primary font-bold">
+                    <p className="text-sm font-bold text-primary">
                       {formatRupiah(Number(selectedRate.cost))}
                     </p>
                   </div>
@@ -523,7 +618,7 @@ export default function ShippingPage() {
               <Button
                 onClick={handleConfirm}
                 disabled={!canConfirm}
-                className={`w-full py-3 font-bold text-base transition ${
+                className={`w-full py-2.5 font-bold text-sm transition ${
                   canConfirm
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
@@ -533,10 +628,14 @@ export default function ShippingPage() {
               </Button>
 
               {!canConfirm && (
-                <p className="text-xs text-muted-foreground text-center mt-2">
-                  {!isAddressComplete
-                    ? "Lengkapi alamat tujuan terlebih dahulu"
-                    : "Pilih layanan kurir terlebih dahulu"}
+                <p className="text-[10px] text-muted-foreground text-center mt-2">
+                  {!selectedSubDistrict
+                    ? "Pilih kelurahan tujuan terlebih dahulu"
+                    : !selectedRate
+                      ? "Pilih layanan kurir terlebih dahulu"
+                      : !isStreetValid
+                        ? "Lengkapi detail alamat (min. 10 karakter)"
+                        : ""}
                 </p>
               )}
             </div>

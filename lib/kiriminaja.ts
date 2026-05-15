@@ -52,9 +52,12 @@ export async function getCities(provinsi_id: number): Promise<City[]> {
 }
 
 export async function getDistricts(kabupaten_id: number): Promise<District[]> {
-  const data = await post<{ status: boolean; datas: District[] }>("/kecamatan", {
-    kabupaten_id,
-  });
+  const data = await post<{ status: boolean; datas: District[] }>(
+    "/kecamatan",
+    {
+      kabupaten_id,
+    },
+  );
   return data.datas;
 }
 
@@ -69,13 +72,41 @@ export async function getSubDistricts(
 }
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
+export interface ExpressPricingPayload {
+  destination: number; // kecamatan_id
+  subdistrict_destination: number; // kelurahan_id
+  item_value: string; // total product price as string
+  weight: number; // grams — from calculatePackageDimensions
+  length: number; // cm
+  width: number; // cm
+  height: number; // cm
+}
 
 export async function getExpressPricing(
-  payload: PricingExpressRequest,
+  payload: ExpressPricingPayload,
 ): Promise<ShippingRate[]> {
+  const body = {
+    // ── hardcoded origin (your warehouse) ──────────────────────────────────
+    origin: 6983,
+    subdistrict_origin: 31409,
+    // ── from user address selection ────────────────────────────────────────
+    destination: payload.destination,
+    subdistrict_destination: payload.subdistrict_destination,
+    // ── from cart dimensions ───────────────────────────────────────────────
+    weight: payload.weight,
+    length: payload.length,
+    width: payload.width,
+    height: payload.height,
+    // ── from cart subtotal ─────────────────────────────────────────────────
+    item_value: payload.item_value,
+    // ── fixed ──────────────────────────────────────────────────────────────
+    insurance: 1,
+    courier: ["jne", "tiki", "spx"],
+  };
+
   const data = await post<{ status: boolean; results: ShippingRate[] }>(
-    "/price",
-    payload as unknown as Record<string, unknown>,
+    "/v6.1/shipping_price",
+    body,
   );
   return data.results;
 }

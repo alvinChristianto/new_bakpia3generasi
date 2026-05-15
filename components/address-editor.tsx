@@ -83,14 +83,16 @@ export function AddressEditor({
 
   // Which tab is active in the modal
   const [activeTab, setActiveTab] = useState<"delivery" | "pickup">(
-    currentAddress?.type ?? "delivery"
+    currentAddress?.type ?? "delivery",
   );
 
   // Pickup form state
   const [pickupForm, setPickupForm] = useState<PickupFormState>({
     storeId: currentAddress?.type === "pickup" ? currentAddress.storeId : "",
-    pickupDate: currentAddress?.type === "pickup" ? currentAddress.pickupDate : "",
-    pickupTime: currentAddress?.type === "pickup" ? currentAddress.pickupTime : "",
+    pickupDate:
+      currentAddress?.type === "pickup" ? currentAddress.pickupDate : "",
+    pickupTime:
+      currentAddress?.type === "pickup" ? currentAddress.pickupTime : "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -150,7 +152,6 @@ export function AddressEditor({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-card border border-border rounded-lg max-w-md w-full shadow-lg">
-
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-lg font-bold text-foreground">
@@ -165,11 +166,13 @@ export function AddressEditor({
         </div>
 
         <div className="p-6 space-y-4">
-
           {/* ── Tab selector ── */}
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => { setActiveTab("delivery"); setErrors({}); }}
+              onClick={() => {
+                setActiveTab("delivery");
+                setErrors({});
+              }}
               className={`flex items-center justify-center gap-2 p-3 border rounded-lg text-sm font-medium transition ${
                 activeTab === "delivery"
                   ? "border-primary bg-primary/5 text-primary"
@@ -180,7 +183,10 @@ export function AddressEditor({
               Kirim ke Alamat
             </button>
             <button
-              onClick={() => { setActiveTab("pickup"); setErrors({}); }}
+              onClick={() => {
+                setActiveTab("pickup");
+                setErrors({});
+              }}
               className={`flex items-center justify-center gap-2 p-3 border rounded-lg text-sm font-medium transition ${
                 activeTab === "pickup"
                   ? "border-primary bg-primary/5 text-primary"
@@ -195,25 +201,42 @@ export function AddressEditor({
           {/* ── Delivery tab ── */}
           {activeTab === "delivery" && (
             <div className="space-y-4">
-              {/* Show current delivery address if already set */}
-              {currentAddress?.type === "delivery" && (
-                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                  <p className="text-xs font-medium text-primary mb-1">
-                    Alamat saat ini:
-                  </p>
-                  <p className="text-sm text-foreground">
-                    {currentAddress.fullAddress}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {currentAddress.courier.service_name} ·{" "}
-                    {new Intl.NumberFormat("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                      minimumFractionDigits: 0,
-                    }).format(currentAddress.courier.cost)}
-                  </p>
-                </div>
-              )}
+              {/* Show current delivery address if already set and courier exists */}
+              {currentAddress?.type === "delivery" &&
+                currentAddress.courier && (
+                  <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                    <p className="text-xs font-medium text-primary mb-1">
+                      Alamat saat ini:
+                    </p>
+                    <p className="text-sm text-foreground">
+                      {currentAddress.fullAddress}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {currentAddress.courier.service_name} ·{" "}
+                      {new Intl.NumberFormat("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                      }).format(currentAddress.courier.cost)}
+                    </p>
+                  </div>
+                )}
+
+              {/* Show stale warning when courier was cleared */}
+              {currentAddress?.type === "delivery" &&
+                !currentAddress.courier && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs font-medium text-amber-700 mb-0.5">
+                      Jumlah produk berubah
+                    </p>
+                    <p className="text-xs text-amber-600">
+                      {currentAddress.fullAddress}
+                    </p>
+                    <p className="text-xs text-amber-600 mt-1">
+                      Silakan pilih ulang kurir pengiriman
+                    </p>
+                  </div>
+                )}
 
               <p className="text-sm text-muted-foreground">
                 Pilih alamat tujuan dan kurir pengiriman melalui halaman
@@ -234,7 +257,6 @@ export function AddressEditor({
           {/* ── Pickup tab ── */}
           {activeTab === "pickup" && (
             <div className="space-y-4">
-
               {/* Store selector */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
@@ -263,17 +285,22 @@ export function AddressEditor({
                     {errors.storeId}
                   </div>
                 )}
-                {pickupForm.storeId && (() => {
-                  const store = OFFLINE_STORES.find(
-                    (s) => s.id === pickupForm.storeId
-                  );
-                  return (
-                    <div className="mt-2 p-3 bg-muted rounded-lg text-xs">
-                      <p className="text-foreground font-medium">{store?.address}</p>
-                      <p className="text-muted-foreground mt-0.5">{store?.phone}</p>
-                    </div>
-                  );
-                })()}
+                {pickupForm.storeId &&
+                  (() => {
+                    const store = OFFLINE_STORES.find(
+                      (s) => s.id === pickupForm.storeId,
+                    );
+                    return (
+                      <div className="mt-2 p-3 bg-muted rounded-lg text-xs">
+                        <p className="text-foreground font-medium">
+                          {store?.address}
+                        </p>
+                        <p className="text-muted-foreground mt-0.5">
+                          {store?.phone}
+                        </p>
+                      </div>
+                    );
+                  })()}
               </div>
 
               {/* Date + Time */}
@@ -287,7 +314,10 @@ export function AddressEditor({
                     value={pickupForm.pickupDate}
                     min={getMinDate()}
                     onChange={(e) => {
-                      setPickupForm({ ...pickupForm, pickupDate: e.target.value });
+                      setPickupForm({
+                        ...pickupForm,
+                        pickupDate: e.target.value,
+                      });
                       if (errors.pickupDate)
                         setErrors({ ...errors, pickupDate: "" });
                     }}
