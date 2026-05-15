@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AddressData } from "@/types/address";
+import type { AddressData } from "../app/types/address";
 
 interface ShippingState {
   address: AddressData | null;

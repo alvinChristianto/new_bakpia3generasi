@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, AlertCircle, Truck, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { AddressData, PickupAddress } from "@/types/address";
+import type { AddressData, PickupAddress } from "../app/types/address";
 
 // ─── Offline stores (unchanged) ───────────────────────────────────────────────
 

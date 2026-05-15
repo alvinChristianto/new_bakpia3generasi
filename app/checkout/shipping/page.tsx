@@ -16,7 +16,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useShipping } from "@/hooks/use-shipping";
 import { useCart } from "@/hooks/use-cart";
-import { calculatePackageDimensions } from "@/lib/package-dimensions";
+import { calculatePackageDimensions } from "../../..//lib/package-dimensions";
 import {
   getProvinces,
   getCities,
@@ -30,8 +30,8 @@ import type {
   District,
   SubDistrict,
   ShippingRate,
-} from "@/types/kiriminaja";
-import type { DeliveryAddress } from "@/types/address";
+} from "../../types/kiriminaja";
+import type { DeliveryAddress } from "../../types/address";
 
 function formatRupiah(amount: number) {
   return new Intl.NumberFormat("id-ID", {

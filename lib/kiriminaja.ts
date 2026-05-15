@@ -5,7 +5,7 @@ import type {
   SubDistrict,
   PricingExpressRequest,
   ShippingRate,
-} from "@/types/kiriminaja";
+} from "../app/types/kiriminaja";
 
 /**
  * All KiriminAja calls are proxied through our own Next.js API route
