@@ -4,7 +4,6 @@ import Image from "next/image";
 import { Star, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { randomBytes } from "crypto";
 
 interface ProductCardProps {
   id: string;
@@ -15,6 +14,7 @@ interface ProductCardProps {
   description: string;
   category: string;
   onAddToCart: (id: string) => void;
+  onOpenModal: () => void;
 }
 
 export function ProductCard({
@@ -26,6 +26,7 @@ export function ProductCard({
   description,
   category,
   onAddToCart,
+  onOpenModal,
 }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
@@ -49,23 +50,32 @@ export function ProductCard({
 
   return (
     <div className="bg-card rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
-      {/* Product Image */}
-      <div className="relative w-full h-64 bg-muted">
+      {/* Product Image — clickable */}
+      <button
+        onClick={onOpenModal}
+        className="relative w-full h-64 bg-muted block overflow-hidden group"
+        aria-label={`Lihat detail ${name}`}
+      >
         <Image
           src={imageSrc}
           alt={name}
           fill
-          className="object-cover"
-          unoptimized // Tambahkan properti ini
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          unoptimized
         />
-      </div>
+      </button>
 
       {/* Product Info */}
       <div className="p-4">
-        {/* Title */}
-        <h3 className="text-lg font-semibold text-card-foreground mb-2 line-clamp-2">
-          {name}
-        </h3>
+        {/* Title — clickable */}
+        <button
+          onClick={onOpenModal}
+          className="text-left w-full"
+        >
+          <h3 className="text-lg font-semibold text-card-foreground mb-2 line-clamp-2 hover:text-primary transition-colors">
+            {name}
+          </h3>
+        </button>
 
         {/* Rating */}
         <div className="flex items-center gap-2 mb-4">

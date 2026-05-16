@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ProductCard } from './product-card'
+import { ProductModal } from './product-modal'
 import { useCart } from '@/hooks/use-cart'
 import { getAllActiveProducts } from '@/app/api/endpoints/all_active_products'
 
@@ -24,6 +25,7 @@ const categories = [
 export function ProductsSection() {
   const [selectedCategory, setSelectedCategory] = useState('semua')
   const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [modalProduct, setModalProduct] = useState<Product | null>(null)
   const { addItem } = useCart()
 
   const getDataBakpia = async () => {
@@ -104,6 +106,7 @@ export function ProductsSection() {
                     key={product.id}
                     {...product}
                     onAddToCart={handleAddToCart}
+                    onOpenModal={() => setModalProduct(product)}
                   />
                 ))}
               </div>
@@ -117,6 +120,12 @@ export function ProductsSection() {
           </main>
         </div>
       </div>
+
+      <ProductModal
+        product={modalProduct}
+        isOpen={modalProduct !== null}
+        onClose={() => setModalProduct(null)}
+      />
     </section>
   )
 }
