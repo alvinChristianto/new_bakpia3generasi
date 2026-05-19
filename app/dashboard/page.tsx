@@ -17,30 +17,30 @@ interface Profile {
   created_at: string;
 }
 
+const PAID_STATUSES = new Set(["paid", "processing", "shipping", "completed"]);
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [paidCount, setPaidCount] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const getProfile = async () => {
-      if (session?.accessToken) {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BE_ROUTE}/api/profile`,
-          {
-            headers: {
-              Authorization: `Bearer ${session.accessToken}`,
-              Accept: "application/json",
-            },
-          },
-        );
-        const data = await res.json();
-        console.log("Profile Data:", data);
-        setProfile(data);
-      }
-    };
+    if (!session?.accessToken) return;
 
-    getProfile();
+    const token = (session as any).accessToken;
+    const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+
+    fetch(`${process.env.NEXT_PUBLIC_BE_ROUTE}/api/profile`, { headers })
+      .then((r) => r.json())
+      .then(setProfile);
+
+    fetch(`${process.env.NEXT_PUBLIC_BE_ROUTE}/api/orderlists`, { headers })
+      .then((r) => r.json())
+      .then((json) => {
+        const orders: { status: string }[] = json.data?.orders ?? [];
+        setPaidCount(orders.filter((o) => PAID_STATUSES.has(o.status)).length);
+      });
   }, [session]);
 
   useEffect(() => {
@@ -76,7 +76,14 @@ export default function DashboardPage() {
                 <div className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition cursor-pointer h-full">
                   <div className="flex items-center justify-between mb-4">
                     <ShoppingBag className="w-12 h-12 text-primary" />
-                    <span className="text-3xl font-bold text-primary"></span>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-primary">
+                        {paidCount ?? "—"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        sudah dibayar
+                      </p>
+                    </div>
                   </div>
                   <h2 className="text-xl font-bold text-foreground mb-2">
                     Pesanan Saya
