@@ -14,7 +14,6 @@ export default function RegisterPage() {
   const handleRegister = async (data: RegisterData) => {
     setError(null);
     setIsLoading(true);
-    console.log(data);
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BE_ROUTE}/api/register`,
@@ -34,28 +33,28 @@ export default function RegisterPage() {
         throw new Error(result.message || "Pendaftaran gagal");
       }
 
-      // --- BAGIAN KRUSIAL ---
-      // Panggil signIn dengan provider 'credentials' agar Auth.js membuatkan cookie
       const loginResult = await signIn("credentials", {
-        redirect: false, // Kita handle redirect manual agar lebih smooth
+        redirect: false,
         email: data.email,
         password: data.password,
       });
 
       if (loginResult?.error) {
-        // Jika pendaftaran sukses tapi login gagal (jarang terjadi)
         router.push("/login?error=auto-login-failed");
       } else {
-        // Pendaftaran sukses & Session tercipta di Cookie!
         router.push("/dashboard");
       }
-      // -----------------------
     } catch (err: any) {
       setError(err.message);
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleAuth = async () => {
+    setIsLoading(true);
+    await signIn("google", { callbackUrl: "/dashboard" });
+    setIsLoading(false);
   };
 
   return (
@@ -96,8 +95,13 @@ export default function RegisterPage() {
             </div>
 
             {/* Social Register - Optional */}
-            <button className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">
-              Daftar dengan Google
+            <button
+              type="button"
+              onClick={handleGoogleAuth}
+              disabled={isLoading}
+              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50"
+            >
+              {isLoading ? "Memproses..." : "Daftar dengan Google"}
             </button>
           </div>
 

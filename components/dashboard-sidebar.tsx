@@ -10,12 +10,11 @@ export function DashboardSidebar() {
   const { data: session, status } = useSession(); // Cek status login
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    // setIsLogoutModalOpen(true);
-    // setIsOpen(false);
+    setIsLoggingOut(true);
     try {
-      // 1. Panggil API Logout Laravel (Opsional tapi direkomendasikan untuk keamanan)
       if (session?.accessToken) {
         await fetch(`${process.env.NEXT_PUBLIC_BE_ROUTE}/api/logout`, {
           method: "POST",
@@ -30,7 +29,6 @@ export function DashboardSidebar() {
     } catch (error) {
       console.error("Gagal revoke token di Laravel", error);
     } finally {
-      // 2. Hapus session di Next.js dan redirect ke home
       signOut({ callbackUrl: "/" });
     }
   };
@@ -106,7 +104,8 @@ export function DashboardSidebar() {
           {/* Logout Button */}
           <button
             onClick={() => {
-              handleLogout();
+              setIsLogoutModalOpen(true);
+              setIsOpen(false);
             }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition font-medium"
           >
@@ -120,6 +119,8 @@ export function DashboardSidebar() {
       <LogoutModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        isLoading={isLoggingOut}
       />
     </>
   );

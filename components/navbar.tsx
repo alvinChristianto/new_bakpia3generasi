@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ShoppingCart, User, Menu, X } from "lucide-react";
 import { CartSidebar } from "@/components/cart-sidebar";
+import { LogoutModal } from "@/components/logout-modal";
 import { useCart } from "@/hooks/use-cart";
 import { useSession, signOut } from "next-auth/react";
 
@@ -12,11 +13,13 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthDropdownOpen, setIsAuthDropdownOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { cartCount } = useCart();
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
-      // 1. Panggil API Logout Laravel (Opsional tapi direkomendasikan untuk keamanan)
       if (session?.accessToken) {
         await fetch(`${process.env.NEXT_PUBLIC_BE_ROUTE}/api/logout`, {
           method: "POST",
@@ -29,7 +32,6 @@ export function Navbar() {
     } catch (error) {
       console.error("Gagal revoke token di Laravel", error);
     } finally {
-      // 2. Hapus session di Next.js dan redirect ke home
       signOut({ callbackUrl: "/" });
     }
   };
@@ -100,7 +102,10 @@ export function Navbar() {
                         <p className="w-4 h-4" /> Dashboard
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={() => {
+                          setIsAuthDropdownOpen(false);
+                          setIsLogoutModalOpen(true);
+                        }}
                         className="flex items-center gap-2 w-full text-left px-4 py-3 text-destructive hover:bg-destructive/10 transition text-sm"
                       >
                         <p className="w-4 h-4" /> Keluar
@@ -198,6 +203,13 @@ export function Navbar() {
 
         <CartSidebar open={isCartOpen} onOpenChange={setIsCartOpen} />
       </div>
+
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        isLoading={isLoggingOut}
+      />
     </nav>
   );
 }

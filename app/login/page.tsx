@@ -14,38 +14,22 @@ export default function LoginPage() {
   const handleLogin = async (data: LoginData) => {
     setError(null);
     setIsLoading(true);
-
-    fetch(`${process.env.NEXT_PUBLIC_BE_ROUTE}/api/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(data),
-    })
-      .then((res) => res.json())
-      .then((result) => {
-        if (!result.access_token) {
-          throw new Error(result.message || "Login gagal");
-        }
-        // Simpan token di cookie melalui NextAuth
-        signIn("credentials", {
-          redirect: false,
-          email: data.email,
-          password: data.password,
-        }).then((loginResult) => {
-          if (loginResult?.error) {
-            router.push("/login?error=auto-login-failed");
-          } else {
-            router.push("/dashboard");
-          }
-        });
-      })
-      .catch((err) => {
-        setError(err.message);
-        console.error(err);
-      })
-      .finally(() => setIsLoading(false));
+    try {
+      const loginResult = await signIn("credentials", {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+      });
+      if (loginResult?.error) {
+        setError("Email atau password salah.");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Login gagal");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleLogin = async () => {

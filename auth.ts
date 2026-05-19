@@ -1,11 +1,50 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+    Credentials({
+      credentials: {
+        email: {},
+        password: {},
+      },
+      async authorize(credentials) {
+        const email =
+          typeof credentials?.email === "string" ? credentials.email : "";
+        const password =
+          typeof credentials?.password === "string"
+            ? credentials.password
+            : "";
+        if (!email || !password) return null;
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BE_ROUTE}/api/login`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          },
+        );
+
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data?.access_token || !data?.user) return null;
+
+        return {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          accessToken: data.access_token,
+        };
+      },
     }),
   ],
   // TAMBAHKAN INI
