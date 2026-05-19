@@ -32,9 +32,14 @@ interface Transaction {
   service_fee: number;
   grand_total: number;
   courier_name: string | null;
+  courier_service: string | null;
+  tracking_number: string | null;
   payment_method: string | null;
   shipping_address_snapshot: Record<string, any> | null;
+  requested_shipping_datetime: string | null;
   paid_at: string | null;
+  shipped_at: string | null;
+  completed_at: string | null;
   created_at: string;
 }
 
@@ -259,22 +264,47 @@ function InvoiceModal({
               <div>
                 <div className="flex items-center gap-2 font-semibold text-foreground mb-2">
                   <MapPin className="w-4 h-4 text-primary" />
-                  Alamat Pengiriman
+                  {addr.type === "pickup" ? "Lokasi Ambil" : "Alamat Pengiriman"}
                 </div>
-                <div className="bg-muted/40 rounded-lg px-4 py-3 space-y-0.5 text-foreground">
-                  {addr.name && <p className="font-medium">{addr.name}</p>}
-                  {addr.phone && (
-                    <p className="text-muted-foreground">{addr.phone}</p>
+                <div className="bg-muted/40 rounded-lg px-4 py-3 space-y-0.5 text-foreground text-sm">
+                  {addr.type === "pickup" ? (
+                    <>
+                      <p className="font-medium">{addr.storeName}</p>
+                      <p className="text-muted-foreground">{addr.storeAddress}</p>
+                      {addr.pickupDate && (
+                        <p className="text-muted-foreground">
+                          Ambil:{" "}
+                          {new Date(addr.pickupDate).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}{" "}
+                          pukul {addr.pickupTime}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {addr.streetDetail && <p>{addr.streetDetail}</p>}
+                      {addr.subdistrict?.kelurahan_name && (
+                        <p className="text-muted-foreground">
+                          {[
+                            addr.subdistrict?.kelurahan_name,
+                            addr.district?.kecamatan_name,
+                            addr.city?.kabupaten_name,
+                            addr.province?.provinsi_name,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      )}
+                      {addr.city?.postal_code && (
+                        <p className="text-muted-foreground">
+                          Kode Pos: {addr.city.postal_code}
+                        </p>
+                      )}
+                    </>
                   )}
-                  {addr.address && <p>{addr.address}</p>}
-                  {(addr.subdistrict || addr.city || addr.province) && (
-                    <p>
-                      {[addr.subdistrict, addr.city, addr.province]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </p>
-                  )}
-                  {addr.postal_code && <p>Kode Pos: {addr.postal_code}</p>}
                 </div>
               </div>
             )}
@@ -288,7 +318,9 @@ function InvoiceModal({
                       Kurir
                     </p>
                     <p className="font-medium uppercase text-foreground">
-                      {transaction.courier_name}
+                      {transaction.courier_service
+                        ? transaction.courier_service
+                        : transaction.courier_name}
                     </p>
                   </div>
                 )}
@@ -305,9 +337,49 @@ function InvoiceModal({
               </div>
             )}
 
+            {/* Tracking number */}
+            {transaction.tracking_number && (
+              <div className="bg-muted/40 rounded-lg px-4 py-3">
+                <p className="text-xs text-muted-foreground mb-0.5">
+                  No. Resi
+                </p>
+                <p className="font-mono font-semibold text-foreground">
+                  {transaction.tracking_number}
+                </p>
+              </div>
+            )}
+
+            {/* Requested pickup datetime */}
+            {transaction.requested_shipping_datetime && (
+              <p className="text-xs text-muted-foreground">
+                Jadwal ambil:{" "}
+                {new Date(
+                  transaction.requested_shipping_datetime
+                ).toLocaleString("id-ID", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            )}
+
             {transaction.paid_at && (
               <p className="text-xs text-muted-foreground">
                 Dibayar pada: {formatDate(transaction.paid_at)}
+              </p>
+            )}
+
+            {transaction.shipped_at && (
+              <p className="text-xs text-muted-foreground">
+                Dikirim pada: {formatDate(transaction.shipped_at)}
+              </p>
+            )}
+
+            {transaction.completed_at && (
+              <p className="text-xs text-muted-foreground">
+                Selesai pada: {formatDate(transaction.completed_at)}
               </p>
             )}
           </div>
