@@ -10,9 +10,11 @@ export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [googleConflict, setGoogleConflict] = useState(false);
 
   const handleRegister = async (data: RegisterData) => {
     setError(null);
+    setGoogleConflict(false);
     setIsLoading(true);
     try {
       const res = await fetch(
@@ -30,6 +32,9 @@ export default function RegisterPage() {
       const result = await res.json();
 
       if (!res.ok) {
+        if (result.error_code === "google_account_exists") {
+          setGoogleConflict(true);
+        }
         throw new Error(result.message || "Pendaftaran gagal");
       }
 
@@ -76,10 +81,28 @@ export default function RegisterPage() {
               Daftar Akun
             </h2>
 
-            {error && (
-              <div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
-                {error}
+            {googleConflict ? (
+              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                <p className="font-medium mb-1">Email sudah terdaftar via Google</p>
+                <p className="mb-3">
+                  Akun dengan email ini sudah dibuat menggunakan Google. Silakan
+                  masuk dengan Google.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleGoogleAuth}
+                  disabled={isLoading}
+                  className="w-full px-4 py-2 border border-amber-300 rounded-lg text-sm font-medium bg-white hover:bg-amber-50 transition disabled:opacity-50"
+                >
+                  {isLoading ? "Memproses..." : "Masuk dengan Google"}
+                </button>
               </div>
+            ) : (
+              error && (
+                <div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
+                  {error}
+                </div>
+              )
             )}
 
             <RegisterForm onSubmit={handleRegister} />
