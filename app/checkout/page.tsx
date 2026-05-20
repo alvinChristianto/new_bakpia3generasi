@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -17,6 +18,14 @@ import { CheckoutForm, type CustomerData } from "@/components/checkout-form";
 import { AddressEditor } from "@/components/address-editor";
 import { ApiResponse } from "../api/types";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   ChevronLeft,
   Package,
   Truck,
@@ -27,9 +36,13 @@ import {
   ReceiptText,
   Loader2,
   AlertCircle,
+  CheckCircle2,
+  XCircle,
+  TriangleAlert,
 } from "lucide-react";
 import Script from "next/script";
 import { checkoutOrder } from "../api/endpoints/checkout";
+import { getProfile } from "../api/endpoints/profile";
 
 // ─── Midtrans checkout response shape ─────────────────────────────────────────
 
@@ -62,6 +75,7 @@ function removeLastPartOrderId(orderId: string): string {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const { cart, subtotal, removeItem, updateQuantity } = useCart();
   const { address, clearCourier } = useShipping();
   const shippingCost = getShippingCost(address);
@@ -81,6 +95,20 @@ export default function CheckoutPage() {
   const [isAddressEditorOpen, setIsAddressEditorOpen] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [isFormValid, setIsFormValid] = useState(false);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.accessToken) return;
+    getProfile(session.accessToken as string).then((profile) => {
+      const data = {
+        namaPenerima: profile.name ?? "",
+        email: profile.email ?? "",
+        nomorTelepon: profile.phone_number ?? "",
+      };
+      setCustomerData(data);
+      setIsFormValid(!!(data.namaPenerima && data.email && data.nomorTelepon));
+    }).catch(() => {});
+  }, [status, session?.accessToken]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({
@@ -182,16 +210,45 @@ export default function CheckoutPage() {
   };
 
   const handleCompleteOrder = async () => {
-    if (!isFormValid || !customerData) {
-      alert(
-        "Silakan lengkapi semua data penerima (nama, email, dan nomor telepon) terlebih dahulu",
+    
+    if (!customerData?.namaPenerima || !customerData?.email || !customerData?.nomorTelepon) {
+      triggerModal(
+        "Data Penerima Belum Lengkap",
+        "Silakan lengkapi nama, email, dan nomor telepon penerima terlebih dahulu.",
+        "warning",
       );
+      
+    console.log("test");
+      return;
+    }
+    if (!isFormValid) {
+      triggerModal(
+        "Data Penerima Tidak Valid",
+        "Periksa kembali nama, email, atau nomor telepon yang Anda masukkan.",
+        "warning",
+      );
+      
+    console.log("test");
       return;
     }
     if (!address) {
-      alert(
-        "Silakan pilih alamat pengiriman atau toko pengambilan terlebih dahulu",
+      triggerModal(
+        "Metode Pengiriman Belum Dipilih",
+        "Silakan pilih alamat pengiriman atau toko pengambilan terlebih dahulu.",
+        "warning",
       );
+      
+    console.log("test");
+      return;
+    }
+    if (courierStale) {
+      triggerModal(
+        "Kurir Belum Dipilih",
+        "Pilih ulang kurir pengiriman sebelum melanjutkan pembayaran.",
+        "warning",
+      );
+      
+    console.log("test");
       return;
     }
     await handleProceedPayment();
@@ -257,6 +314,7 @@ export default function CheckoutPage() {
                   onDataChange={setCustomerData}
                   initialData={customerData || undefined}
                   onValidationChange={setIsFormValid}
+                  locked={status === "authenticated"}
                 />
               </div>
 
@@ -466,14 +524,8 @@ export default function CheckoutPage() {
 
                 <Button
                   onClick={handleCompleteOrder}
-                  disabled={
-                    !isFormValid || isLoading || !address || courierStale
-                  }
-                  className={`w-full py-3 font-bold text-lg transition flex items-center justify-center gap-2 ${
-                    isFormValid && !isLoading && address && !courierStale
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
-                  }`}
+                  disabled={isLoading}
+                  className="w-full py-3 font-bold text-lg transition flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <>
@@ -484,16 +536,6 @@ export default function CheckoutPage() {
                     "Lanjut Pembayaran"
                   )}
                 </Button>
-
-                {(!isFormValid || !address || courierStale) && (
-                  <p className="text-xs text-muted-foreground text-center mt-3">
-                    {courierStale
-                      ? "Pilih ulang kurir pengiriman untuk melanjutkan"
-                      : !address
-                        ? "Pilih alamat pengiriman untuk melanjutkan"
-                        : "Lengkapi data penerima untuk melanjutkan"}
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -507,6 +549,28 @@ export default function CheckoutPage() {
         onSave={(newAddress) => useShipping.getState().setAddress(newAddress)}
         currentAddress={address}
       />
+
+      {/* Status Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              {modalContent.type === "success" && (
+                <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
+              )}
+              {modalContent.type === "fail" && (
+                <XCircle className="w-6 h-6 text-destructive flex-shrink-0" />
+              )}
+              {modalContent.type === "warning" && (
+                <TriangleAlert className="w-6 h-6 text-yellow-500 flex-shrink-0" />
+              )}
+              <DialogTitle>{modalContent.title}</DialogTitle>
+            </div>
+            <DialogDescription>{modalContent.message}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter showCloseButton />
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </>

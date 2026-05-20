@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { AlertCircle } from 'lucide-react'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { AlertCircle, Lock } from 'lucide-react'
 
 export interface CustomerData {
   namaPenerima: string
@@ -13,9 +14,10 @@ interface CheckoutFormProps {
   onDataChange: (data: CustomerData) => void
   initialData?: CustomerData
   onValidationChange?: (isValid: boolean) => void
+  locked?: boolean
 }
 
-export function CheckoutForm({ onDataChange, initialData, onValidationChange }: CheckoutFormProps) {
+export function CheckoutForm({ onDataChange, initialData, onValidationChange, locked = false }: CheckoutFormProps) {
   const [formData, setFormData] = useState<CustomerData>(
     initialData || {
       namaPenerima: '',
@@ -24,6 +26,12 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange }: 
     }
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!locked || !initialData) return
+    setFormData(initialData)
+    onDataChange(initialData)
+  }, [locked, initialData, onDataChange])
 
   const getFieldError = (field: keyof CustomerData, value: string): string => {
     if (field === 'namaPenerima') {
@@ -95,9 +103,31 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange }: 
     }
   }
 
+  const inputClass = (field: keyof CustomerData) =>
+    `w-full px-3 py-2 border rounded-lg text-foreground placeholder-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+      locked
+        ? 'bg-muted border-border cursor-not-allowed opacity-70'
+        : errors[field]
+        ? 'bg-background border-destructive'
+        : 'bg-background border-border'
+    }`
+
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-foreground">Data Penerima</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-foreground">Data Penerima</h3>
+        {locked && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Lock className="w-3.5 h-3.5" />
+            <span>
+              Data dari akun Anda.{' '}
+              <Link href="/dashboard/edit-profile" className="underline hover:text-foreground">
+                Ubah di Profil
+              </Link>
+            </span>
+          </div>
+        )}
+      </div>
 
       <div>
         <label className="block text-sm font-medium text-foreground mb-2">
@@ -106,13 +136,12 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange }: 
         <input
           type="text"
           value={formData.namaPenerima}
-          onChange={(e) => handleChange('namaPenerima', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground placeholder-muted-foreground transition ${
-            errors.namaPenerima ? 'border-destructive' : 'border-border'
-          } focus:outline-none focus:ring-2 focus:ring-primary/50`}
+          onChange={(e) => !locked && handleChange('namaPenerima', e.target.value)}
+          disabled={locked}
+          className={inputClass('namaPenerima')}
           placeholder="Masukkan nama penerima lengkap (minimal 3 huruf)"
         />
-        {errors.namaPenerima && (
+        {!locked && errors.namaPenerima && (
           <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{errors.namaPenerima}</span>
@@ -127,13 +156,12 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange }: 
         <input
           type="email"
           value={formData.email}
-          onChange={(e) => handleChange('email', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground placeholder-muted-foreground transition ${
-            errors.email ? 'border-destructive' : 'border-border'
-          } focus:outline-none focus:ring-2 focus:ring-primary/50`}
+          onChange={(e) => !locked && handleChange('email', e.target.value)}
+          disabled={locked}
+          className={inputClass('email')}
           placeholder="nama@email.com"
         />
-        {errors.email && (
+        {!locked && errors.email && (
           <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{errors.email}</span>
@@ -148,17 +176,25 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange }: 
         <input
           type="tel"
           value={formData.nomorTelepon}
-          onChange={(e) => handleChange('nomorTelepon', e.target.value.replace(/[^\d+\-\s]/g, ''))}
-          className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground placeholder-muted-foreground transition ${
-            errors.nomorTelepon ? 'border-destructive' : 'border-border'
-          } focus:outline-none focus:ring-2 focus:ring-primary/50`}
+          onChange={(e) => !locked && handleChange('nomorTelepon', e.target.value.replace(/[^\d+\-\s]/g, ''))}
+          disabled={locked}
+          className={inputClass('nomorTelepon')}
           placeholder="+62812345678 atau 08123456789"
         />
-        {errors.nomorTelepon && (
+        {!locked && errors.nomorTelepon && (
           <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{errors.nomorTelepon}</span>
           </div>
+        )}
+        {locked && !formData.nomorTelepon && (
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Nomor telepon belum diisi.{' '}
+            <Link href="/dashboard/edit-profile" className="underline hover:text-foreground">
+              Lengkapi di Profil
+            </Link>{' '}
+            sebelum checkout.
+          </p>
         )}
       </div>
     </div>
