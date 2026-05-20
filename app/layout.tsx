@@ -1,69 +1,80 @@
-import React from "react"
-import type { Metadata } from 'next'
-import { Analytics } from '@vercel/analytics/next'
-import { CartProvider } from '@/components/cart-provider'
+import React from "react";
+import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { CartProvider } from "@/components/cart-provider";
 import { Geist, Geist_Mono } from "next/font/google";
-import './globals.css'
+import AuthProvider from "@/components/providers/session-provider";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: 'Bakpia Jogja Istimewa - Premium Indonesian Bakpia',
-    template: '%s - Bakpia Jogja Istimewa',
+    default: "Bakpia 3 Generasi - Premium Indonesian Bakpia",
+    template: "%s - Bakpia 3 Generasi",
   },
-  description: 'Rasakan cita rasa autentik Bakpia Jogja Istimewa. Produk bakpia premium buatan tangan dengan resep tradisional yang telah dipercaya selama puluhan tahun.',
-  keywords: ['bakpia jogja', 'bakpia istimewa', 'bakpia premium', 'makanan tradisional indonesia', 'souvenir jogja'],
-  authors: [{ name: 'Bakpia Jogja Istimewa' }],
-  creator: 'Bakpia Jogja Istimewa',
-  publisher: 'Bakpia Jogja Istimewa',
+  description:
+    "Rasakan cita rasa autentik Bakpia 3 Generasi. Produk bakpia premium buatan tangan dengan resep tradisional yang telah dipercaya selama puluhan tahun.",
+  keywords: [
+    "bakpia jogja",
+    "bakpia istimewa",
+    "bakpia premium",
+    "makanan tradisional indonesia",
+    "souvenir jogja",
+  ],
+  authors: [{ name: "Bakpia 3 Generasi" }],
+  creator: "Bakpia 3 Generasi",
+  publisher: "Bakpia 3 Generasi",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://bakpiajogja.com'),
+  metadataBase: new URL("https://bakpia3generasi.com"),
   alternates: {
-    canonical: '/',
+    canonical: "/",
   },
   openGraph: {
-    type: 'website',
-    locale: 'id_ID',
-    url: '/',
-    siteName: 'Bakpia Jogja Istimewa',
-    title: 'Bakpia Jogja Istimewa - Premium Indonesian Bakpia',
-    description: 'Rasakan cita rasa autentik Bakpia Jogja Istimewa dengan resep tradisional.',
+    type: "website",
+    locale: "id_ID",
+    url: "/",
+    siteName: "Bakpia 3 Generasi",
+    title: "Bakpia 3 Generasi - Premium Indonesian Bakpia",
+    description:
+      "Bakpia 3 Generasi, oleh-oleh dari yogyakarta yang enak dan terjangkau",
     images: [
       {
-        url: '/bakpia-hero.jpg',
+        url: "/bakpia-hero.webp",
         width: 1200,
         height: 630,
-        alt: 'Bakpia Jogja Istimewa',
+        alt: "Bakpia 3 Generasi",
       },
     ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Bakpia Jogja Istimewa',
-    description: 'Bakpia Premium dari Yogyakarta',
-    creator: '@bakpiajogja',
+    card: "summary_large_image",
+    title: "Bakpia 3 Generasi",
+    description:
+      "Bakpia 3 Generasi, oleh-oleh dari yogyakarta yang enak dan terjangkau",
+    creator: "@bakpiajogja",
+    images: ["/bakpia-hero.webp"],
   },
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
+        url: "/favicon.ico",
+        media: "(prefers-color-scheme: light)",
       },
       {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
+        url: "/favicon.ico",
+        media: "(prefers-color-scheme: dark)",
       },
       {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
+        url: "/favicon.ico",
+        type: "image/svg+xml",
       },
     ],
-    apple: '/apple-icon.png',
+    apple: "/apple-icon.png",
   },
-}
+};
 
 const geistSans = Geist({
   variable: "--font-sans", // Ini harus cocok dengan variabel di CSS Anda
@@ -78,16 +89,16 @@ const geistMono = Geist_Mono({
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="id" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className={`font-sans antialiased`}>
-        <CartProvider>
-          {children}
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>{children}</CartProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>
-  )
+  );
 }

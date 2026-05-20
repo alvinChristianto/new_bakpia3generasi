@@ -8,7 +8,7 @@ import { AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export interface RegisterData {
-  fullName: string
+  name: string
   email: string
   phone: string
   password: string
@@ -29,7 +29,7 @@ interface LoginFormProps {
 }
 
 // Validation helpers
-const getFullNameError = (value: string): string => {
+const getnameError = (value: string): string => {
   if (!value.trim()) {
     return 'Nama lengkap harus diisi'
   }
@@ -76,7 +76,7 @@ const getPasswordError = (value: string): string => {
 
 export function RegisterForm({ onSubmit }: RegisterFormProps) {
   const [formData, setFormData] = useState<RegisterData>({
-    fullName: '',
+    name: '',
     email: '',
     phone: '',
     password: '',
@@ -105,7 +105,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
 
   const isFormValid = () => {
     return (
-      getFullNameError(formData.fullName) === '' &&
+      getnameError(formData.name) === '' &&
       getEmailError(formData.email) === '' &&
       getPhoneError(formData.phone) === '' &&
       getPasswordError(formData.password) === '' &&
@@ -120,7 +120,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
     } else {
       // Mark all fields as touched to show errors
       setTouched({
-        fullName: true,
+        name: true,
         email: true,
         phone: true,
         password: true,
@@ -137,18 +137,18 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
         </label>
         <input
           type="text"
-          value={formData.fullName}
-          onChange={(e) => handleChange('fullName', e.target.value)}
-          onBlur={() => handleBlur('fullName')}
+          value={formData.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          onBlur={() => handleBlur('name')}
           className={`w-full px-4 py-2 border rounded-lg bg-background text-foreground placeholder-muted-foreground transition ${
-            touched.fullName && getFullNameError(formData.fullName) ? 'border-destructive' : 'border-border'
+            touched.name && getnameError(formData.name) ? 'border-destructive' : 'border-border'
           } focus:outline-none focus:ring-2 focus:ring-primary/50`}
           placeholder="Masukkan nama lengkap"
         />
-        {touched.fullName && getFullNameError(formData.fullName) && (
+        {touched.name && getnameError(formData.name) && (
           <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{getFullNameError(formData.fullName)}</span>
+            <span>{getnameError(formData.name)}</span>
           </div>
         )}
       </div>

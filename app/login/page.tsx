@@ -1,33 +1,43 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { LoginForm, type LoginData } from '@/components/auth-form'
-import { Navbar } from '@/components/navbar'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { LoginForm, type LoginData } from "@/components/auth-form";
+import { Navbar } from "@/components/navbar";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleLogin = async (data: LoginData) => {
-    setError(null)
-    setIsLoading(true)
-
+    setError(null);
+    setIsLoading(true);
     try {
-      // Here you would typically make an API call to login
-      console.log('Login data:', data)
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      alert('Login berhasil!')
-      router.push('/')
-    } catch (err) {
-      setError('Login gagal. Silakan cek email dan password Anda.')
-      console.error(err)
+      const loginResult = await signIn("credentials", {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+      });
+      if (loginResult?.error) {
+        setError("Email atau password salah.");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Login gagal");
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    // callbackUrl diarahkan ke dashboard setelah semua proses (termasuk Laravel) selesai
+    await signIn("google", { callbackUrl: "/dashboard" });
+    setIsLoading(false);
+  };
 
   return (
     <>
@@ -36,7 +46,9 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Logo/Brand */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Bakpia Jogja</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Bakpia Jogja
+            </h1>
             <p className="text-muted-foreground">Istimewa</p>
           </div>
 
@@ -72,20 +84,28 @@ export default function LoginPage() {
             </div>
 
             {/* Social Login - Optional */}
-            <button className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">
-              Masuk dengan Google
+
+            <button
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50"
+            >
+              {isLoading ? "Memproses..." : "Masuk dengan Google"}
             </button>
           </div>
 
           {/* Additional Info */}
           <p className="text-center text-xs text-muted-foreground mt-6">
-            Belum punya akun?{' '}
-            <a href="/register" className="text-primary hover:underline font-semibold">
+            Belum punya akun?{" "}
+            <a
+              href="/register"
+              className="text-primary hover:underline font-semibold"
+            >
               Daftar di sini
             </a>
           </p>
         </div>
       </div>
     </>
-  )
+  );
 }

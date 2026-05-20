@@ -1,33 +1,66 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { RegisterForm, type RegisterData } from '@/components/auth-form'
-import { Navbar } from '@/components/navbar'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { RegisterForm, type RegisterData } from "@/components/auth-form";
+import { Navbar } from "@/components/navbar";
+import { signIn } from "next-auth/react"; // Pastikan import ini ada
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [googleConflict, setGoogleConflict] = useState(false);
 
   const handleRegister = async (data: RegisterData) => {
-    setError(null)
-    setIsLoading(true)
-
+    setError(null);
+    setGoogleConflict(false);
+    setIsLoading(true);
     try {
-      // Here you would typically make an API call to register the user
-      console.log('Register data:', data)
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      alert('Pendaftaran berhasil! Silakan login dengan akun Anda.')
-      router.push('/login')
-    } catch (err) {
-      setError('Pendaftaran gagal. Silakan coba lagi.')
-      console.error(err)
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BE_ROUTE}/api/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(data),
+        },
+      );
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        if (result.error_code === "google_account_exists") {
+          setGoogleConflict(true);
+        }
+        throw new Error(result.message || "Pendaftaran gagal");
+      }
+
+      const loginResult = await signIn("credentials", {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+      });
+
+      if (loginResult?.error) {
+        router.push("/login?error=auto-login-failed");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
+
+  const handleGoogleAuth = async () => {
+    setIsLoading(true);
+    await signIn("google", { callbackUrl: "/dashboard" });
+    setIsLoading(false);
+  };
 
   return (
     <>
@@ -36,7 +69,9 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           {/* Logo/Brand */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Bakpia Jogja</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Bakpia Jogja
+            </h1>
             <p className="text-muted-foreground">Istimewa</p>
           </div>
 
@@ -46,13 +81,31 @@ export default function RegisterPage() {
               Daftar Akun
             </h2>
 
-            {error && (
-              <div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
-                {error}
+            {googleConflict ? (
+              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                <p className="font-medium mb-1">Email sudah terdaftar via Google</p>
+                <p className="mb-3">
+                  Akun dengan email ini sudah dibuat menggunakan Google. Silakan
+                  masuk dengan Google.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleGoogleAuth}
+                  disabled={isLoading}
+                  className="w-full px-4 py-2 border border-amber-300 rounded-lg text-sm font-medium bg-white hover:bg-amber-50 transition disabled:opacity-50"
+                >
+                  {isLoading ? "Memproses..." : "Masuk dengan Google"}
+                </button>
               </div>
+            ) : (
+              error && (
+                <div className="mb-4 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
+                  {error}
+                </div>
+              )
             )}
 
-            <RegisterForm onSubmit={handleRegister}/>
+            <RegisterForm onSubmit={handleRegister} />
 
             {/* Or Divider */}
             <div className="relative my-6">
@@ -65,18 +118,23 @@ export default function RegisterPage() {
             </div>
 
             {/* Social Register - Optional */}
-            <button className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition">
-              Daftar dengan Google
+            <button
+              type="button"
+              onClick={handleGoogleAuth}
+              disabled={isLoading}
+              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50"
+            >
+              {isLoading ? "Memproses..." : "Daftar dengan Google"}
             </button>
           </div>
 
           {/* Additional Info */}
           <p className="text-center text-xs text-muted-foreground mt-6">
-            Dengan mendaftar, Anda menyetujui{' '}
+            Dengan mendaftar, Anda menyetujui{" "}
             <a href="#" className="text-primary hover:underline">
               Ketentuan Layanan
-            </a>
-            {' '}dan{' '}
+            </a>{" "}
+            dan{" "}
             <a href="#" className="text-primary hover:underline">
               Kebijakan Privasi
             </a>
@@ -84,5 +142,5 @@ export default function RegisterPage() {
         </div>
       </div>
     </>
-  )
+  );
 }
