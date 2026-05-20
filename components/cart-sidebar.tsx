@@ -7,6 +7,7 @@ import { ShoppingBag, Plus, Minus, Trash2, X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CartItem, useCart } from '@/hooks/use-cart'
+import { useShipping } from '@/hooks/use-shipping'
 
 interface CartSidebarProps {
   open: boolean
@@ -15,6 +16,7 @@ interface CartSidebarProps {
 
 export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
   const { cart, subtotal, removeItem, updateQuantity, clearCart } = useCart()
+  const { clearCourier } = useShipping()
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -104,12 +106,10 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-2 mt-2">
                         <button
-                          onClick={() =>
-                            updateQuantity(
-                              item.id,
-                              Math.max(1, item.quantity - 1)
-                            )
-                          }
+                          onClick={() => {
+                            updateQuantity(item.id, Math.max(1, item.quantity - 1))
+                            clearCourier()
+                          }}
                           className="p-1 hover:bg-background rounded transition"
                         >
                           <Minus className="w-4 h-4 text-foreground" />
@@ -118,9 +118,10 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() =>
+                          onClick={() => {
                             updateQuantity(item.id, item.quantity + 1)
-                          }
+                            clearCourier()
+                          }}
                           className="p-1 hover:bg-background rounded transition"
                         >
                           <Plus className="w-4 h-4 text-foreground" />
@@ -130,7 +131,7 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
 
                     {/* Delete Button */}
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => { removeItem(item.id); clearCourier() }}
                       className="p-1 hover:bg-background rounded transition flex-shrink-0"
                     >
                       <Trash2 className="w-4 h-4 text-destructive" />

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "next-auth/react";
+import { getProfile } from "@/app/api/endpoints/profile";
 
 interface PasswordData {
   currentPassword: string;
@@ -39,10 +40,12 @@ const EditProfilePage = () => {
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
 
-  // Load name from session on mount
+  // Load name from backend profile (source of truth — session JWT is stale after updates)
   useEffect(() => {
-    if (session?.user?.name) setName(session.user.name);
-  }, [session?.user?.name]);
+    const token = (session as any)?.accessToken;
+    if (!token) return;
+    getProfile(token).then((profile) => setName(profile.name ?? "")).catch(() => {});
+  }, [(session as any)?.accessToken]);
 
   // ── Profile validation ──────────────────────────────────────────────
   const nameError = (() => {
