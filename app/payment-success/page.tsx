@@ -23,10 +23,11 @@ interface TransactionData {
   shipping_cost: number;
   tax_amount: number;
   created_at: string;
-
   shipping_address_snapshot: string;
   service_fee: number;
-
+  courier_name: string | null;
+  courier_service: string | null;
+  tracking_number: string | null;
 }
 
 // Define the full structure returned by Laravel
@@ -71,7 +72,6 @@ export default function PaymentSuccessPage() {
         // if (response?.success === 200 && response.data) {
             console.log("API Response:", response.data.success);
           if (response.data.success && response.data.data) {
-          // Logic to handle JSON address
           let displayAddress = "";
           try {
             const addr =
@@ -79,11 +79,33 @@ export default function PaymentSuccessPage() {
                 ? JSON.parse(response.data.data.shipping_address_snapshot)
                 : response.data.data.shipping_address_snapshot;
 
-            displayAddress =
-              addr.fullAddress || addr.full_address || "Alamat tidak ditemukan";
+            if (addr.type === "pickup") {
+              const pickupDate = addr.pickupDate
+                ? new Date(addr.pickupDate).toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                : "";
+              displayAddress = [
+                addr.storeName,
+                addr.storeAddress,
+                pickupDate && addr.pickupTime
+                  ? `Jadwal ambil: ${pickupDate}, pukul ${addr.pickupTime} WIB`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join("\n");
+            } else {
+              displayAddress =
+                addr.fullAddress || addr.full_address || "Alamat tidak ditemukan";
+            }
           } catch (e) {
-            displayAddress = response.data.data.shipping_address_snapshot; // Fallback if parsing fails
+            displayAddress = response.data.data.shipping_address_snapshot;
           }
+
+          const isDelivery = response.data.data.courier_name !== "pickup";
 
           setOrderData({
             invoiceNumber: response.data.data.invoice_number,
@@ -98,11 +120,15 @@ export default function PaymentSuccessPage() {
               },
             ),
             total: response.data.data.grand_total,
-            items: response.data.details, // This is your $transactionDetails array
+            items: response.data.details,
             shippingAddress: displayAddress,
             shippingCost: response.data.data.shipping_cost,
             service_fee: response.data.data.service_fee,
             estimatedDelivery: "3-5 Hari Kerja",
+            isDelivery,
+            courierName: response.data.data.courier_name,
+            courierService: response.data.data.courier_service,
+            trackingNumber: response.data.data.tracking_number,
           });
         } else {
           setError(true);
@@ -180,19 +206,45 @@ export default function PaymentSuccessPage() {
 
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Alamat Pengiriman/pengambilan
+                  Alamat Pengiriman/Pengambilan
                 </p>
-                <p className="text-sm text-slate-700 leading-relaxed mb-2">
+                <p className="text-sm text-slate-700 leading-relaxed mb-2 whitespace-pre-line">
                   {orderData.shippingAddress}
                 </p>
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <p className="text-xs text-slate-500">
-                    Estimasi Tiba:{" "}
-                    <span className="font-bold text-slate-900">
-                      {orderData.estimatedDelivery}
-                    </span>
-                  </p>
-                </div>
+                {orderData.isDelivery && (
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
+                    {orderData.courierName && (
+                      <p className="text-xs text-slate-500">
+                        Kurir:{" "}
+                        <span className="font-bold text-slate-900">
+                          {orderData.courierName}
+                        </span>
+                      </p>
+                    )}
+                    {orderData.courierService && (
+                      <p className="text-xs text-slate-500">
+                        Layanan:{" "}
+                        <span className="font-bold text-slate-900">
+                          {orderData.courierService}
+                        </span>
+                      </p>
+                    )}
+                    {orderData.trackingNumber && (
+                      <p className="text-xs text-slate-500">
+                        No. Resi:{" "}
+                        <span className="font-bold text-slate-900">
+                          {orderData.trackingNumber}
+                        </span>
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-500">
+                      Estimasi Tiba:{" "}
+                      <span className="font-bold text-slate-900">
+                        {orderData.estimatedDelivery}
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -245,7 +297,7 @@ export default function PaymentSuccessPage() {
                     </div>
 
                     <div className="flex justify-between items-center text-[13px] text-slate-500">
-                      <span>Pajak (10%)</span>
+                      <span>Biaya admin </span>
                       <span>{formatRupiah(orderData.service_fee || 0)}</span>
                     </div>
                   </div>
