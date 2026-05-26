@@ -1,57 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import {
-  Package,
-  Calendar,
-  MapPin,
-  ChevronRight,
-  X,
-  Loader2,
-} from "lucide-react";
+import { Package, Calendar, ChevronRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "next-auth/react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Transaction {
   id: string;
   invoice_number: string;
   status: string;
-  subtotal: number;
-  shipping_cost: number;
-  service_fee: number;
   grand_total: number;
-  courier_name: string | null;
-  courier_service: string | null;
-  tracking_number: string | null;
-  payment_method: string | null;
-  shipping_address_snapshot: Record<string, any> | null;
-  requested_shipping_datetime: string | null;
-  paid_at: string | null;
-  shipped_at: string | null;
-  completed_at: string | null;
   created_at: string;
 }
 
-interface TransactionDetail {
-  id: string;
-  product_name_snapshot: string;
-  quantity: number;
-  price_per_item: number;
-  note: string | null;
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const formatRupiah = (amount: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -67,38 +35,14 @@ const formatDate = (dateString: string) =>
     year: "numeric",
   });
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; className: string }
-> = {
-  pending: {
-    label: "Menunggu Pembayaran",
-    className: "bg-yellow-100 text-yellow-800",
-  },
-  paid: {
-    label: "Sudah Dibayar",
-    className: "bg-blue-100 text-blue-800",
-  },
-  processing: {
-    label: "Sedang Disiapkan",
-    className: "bg-orange-100 text-orange-800",
-  },
-  shipping: {
-    label: "Dalam Pengiriman",
-    className: "bg-indigo-100 text-indigo-800",
-  },
-  completed: {
-    label: "Selesai",
-    className: "bg-green-100 text-green-800",
-  },
-  cancelled: {
-    label: "Dibatalkan",
-    className: "bg-red-100 text-red-800",
-  },
-  failed: {
-    label: "Gagal",
-    className: "bg-red-100 text-red-800",
-  },
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  pending: { label: "Menunggu Pembayaran", className: "bg-yellow-100 text-yellow-800" },
+  paid: { label: "Sudah Dibayar", className: "bg-blue-100 text-blue-800" },
+  processing: { label: "Sedang Disiapkan", className: "bg-orange-100 text-orange-800" },
+  shipping: { label: "Dalam Pengiriman", className: "bg-indigo-100 text-indigo-800" },
+  completed: { label: "Selesai", className: "bg-green-100 text-green-800" },
+  cancelled: { label: "Dibatalkan", className: "bg-red-100 text-red-800" },
+  failed: { label: "Gagal", className: "bg-red-100 text-red-800" },
 };
 
 const STATUS_FILTERS = [
@@ -112,10 +56,7 @@ const STATUS_FILTERS = [
 ];
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? {
-    label: status,
-    className: "bg-muted text-muted-foreground",
-  };
+  const cfg = STATUS_CONFIG[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
   return (
     <Badge className={`${cfg.className} hover:${cfg.className} text-xs`}>
       {cfg.label}
@@ -123,280 +64,14 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ── Invoice Modal ─────────────────────────────────────────────────────────────
-
-function InvoiceModal({
-  invoiceNumber,
-  accessToken,
-  onClose,
-}: {
-  invoiceNumber: string;
-  accessToken: string;
-  onClose: () => void;
-}) {
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
-  const [details, setDetails] = useState<TransactionDetail[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const fetchDetail = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BE_ROUTE}/api/transaction/${invoiceNumber}`,
-          {
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.message || "Gagal memuat detail");
-        setTransaction(json.data.data);
-        setDetails(json.data.details ?? []);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDetail();
-  }, [invoiceNumber, accessToken]);
-
-  const addr = transaction?.shipping_address_snapshot;
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-base font-bold">
-            Detail Pesanan — {invoiceNumber}
-          </DialogTitle>
-        </DialogHeader>
-
-        {loading && (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        )}
-
-        {error && (
-          <p className="text-sm text-destructive py-4 text-center">{error}</p>
-        )}
-
-        {!loading && !error && transaction && (
-          <div className="space-y-5 text-sm">
-            {/* Status + date */}
-            <div className="flex items-center justify-between">
-              <StatusBadge status={transaction.status} />
-              <span className="text-muted-foreground text-xs">
-                {formatDate(transaction.created_at)}
-              </span>
-            </div>
-
-            {/* Items */}
-            <div>
-              <p className="font-semibold text-foreground mb-2">Produk</p>
-              <div className="divide-y divide-border border border-border rounded-lg overflow-hidden">
-                {details.length === 0 ? (
-                  <p className="px-4 py-3 text-muted-foreground">
-                    Tidak ada data produk
-                  </p>
-                ) : (
-                  details.map((d) => (
-                    <div
-                      key={d.id}
-                      className="flex items-start justify-between px-4 py-3 gap-4"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">
-                          {d.product_name_snapshot}
-                        </p>
-                        {d.note && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Catatan: {d.note}
-                          </p>
-                        )}
-                        <p className="text-muted-foreground mt-1">
-                          {d.quantity} × {formatRupiah(d.price_per_item)}
-                        </p>
-                      </div>
-                      <p className="font-semibold text-foreground whitespace-nowrap">
-                        {formatRupiah(d.quantity * d.price_per_item)}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Cost breakdown */}
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="divide-y divide-border">
-                <div className="flex justify-between px-4 py-2">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>{formatRupiah(transaction.subtotal)}</span>
-                </div>
-                <div className="flex justify-between px-4 py-2">
-                  <span className="text-muted-foreground">Ongkos Kirim</span>
-                  <span>{formatRupiah(transaction.shipping_cost)}</span>
-                </div>
-                {transaction.service_fee > 0 && (
-                  <div className="flex justify-between px-4 py-2">
-                    <span className="text-muted-foreground">Biaya Admin</span>
-                    <span>{formatRupiah(transaction.service_fee)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between px-4 py-3 font-bold text-base bg-muted/40">
-                  <span>Total</span>
-                  <span className="text-primary">
-                    {formatRupiah(transaction.grand_total)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Shipping address */}
-            {addr && (
-              <div>
-                <div className="flex items-center gap-2 font-semibold text-foreground mb-2">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  {addr.type === "pickup" ? "Lokasi Ambil" : "Alamat Pengiriman"}
-                </div>
-                <div className="bg-muted/40 rounded-lg px-4 py-3 space-y-0.5 text-foreground text-sm">
-                  {addr.type === "pickup" ? (
-                    <>
-                      <p className="font-medium">{addr.storeName}</p>
-                      <p className="text-muted-foreground">{addr.storeAddress}</p>
-                      {addr.pickupDate && (
-                        <p className="text-muted-foreground">
-                          Ambil:{" "}
-                          {new Date(addr.pickupDate).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })}{" "}
-                          pukul {addr.pickupTime}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {addr.streetDetail && <p>{addr.streetDetail}</p>}
-                      {addr.subdistrict?.kelurahan_name && (
-                        <p className="text-muted-foreground">
-                          {[
-                            addr.subdistrict?.kelurahan_name,
-                            addr.district?.kecamatan_name,
-                            addr.city?.kabupaten_name,
-                            addr.province?.provinsi_name,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      )}
-                      {addr.city?.postal_code && (
-                        <p className="text-muted-foreground">
-                          Kode Pos: {addr.city.postal_code}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Courier + payment */}
-            {(transaction.courier_name || transaction.payment_method) && (
-              <div className="grid grid-cols-2 gap-3">
-                {transaction.courier_name && (
-                  <div className="bg-muted/40 rounded-lg px-4 py-3">
-                    <p className="text-xs text-muted-foreground mb-0.5">
-                      Kurir
-                    </p>
-                    <p className="font-medium uppercase text-foreground">
-                      {transaction.courier_service
-                        ? transaction.courier_service
-                        : transaction.courier_name}
-                    </p>
-                  </div>
-                )}
-                {transaction.payment_method && (
-                  <div className="bg-muted/40 rounded-lg px-4 py-3">
-                    <p className="text-xs text-muted-foreground mb-0.5">
-                      Pembayaran
-                    </p>
-                    <p className="font-medium uppercase text-foreground">
-                      {transaction.payment_method}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Tracking number */}
-            {transaction.tracking_number && (
-              <div className="bg-muted/40 rounded-lg px-4 py-3">
-                <p className="text-xs text-muted-foreground mb-0.5">
-                  No. Resi
-                </p>
-                <p className="font-mono font-semibold text-foreground">
-                  {transaction.tracking_number}
-                </p>
-              </div>
-            )}
-
-            {/* Requested pickup datetime */}
-            {transaction.requested_shipping_datetime && (
-              <p className="text-xs text-muted-foreground">
-                Jadwal ambil:{" "}
-                {new Date(
-                  transaction.requested_shipping_datetime
-                ).toLocaleString("id-ID", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            )}
-
-            {transaction.paid_at && (
-              <p className="text-xs text-muted-foreground">
-                Dibayar pada: {formatDate(transaction.paid_at)}
-              </p>
-            )}
-
-            {transaction.shipped_at && (
-              <p className="text-xs text-muted-foreground">
-                Dikirim pada: {formatDate(transaction.shipped_at)}
-              </p>
-            )}
-
-            {transaction.completed_at && (
-              <p className="text-xs text-muted-foreground">
-                Selesai pada: {formatDate(transaction.completed_at)}
-              </p>
-            )}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function OrdersPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [orders, setOrders] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
-  const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -423,6 +98,10 @@ export default function OrdersPage() {
 
   const filtered =
     filter === "all" ? orders : orders.filter((o) => o.status === filter);
+
+  const goToDetail = (invoiceNumber: string) => {
+    router.push(`/dashboard/orders/${invoiceNumber}`);
+  };
 
   return (
     <>
@@ -464,9 +143,7 @@ export default function OrdersPage() {
                     {count > 0 && (
                       <span
                         className={`ml-1.5 text-xs ${
-                          filter === f.value
-                            ? "opacity-80"
-                            : "text-muted-foreground"
+                          filter === f.value ? "opacity-80" : "text-muted-foreground"
                         }`}
                       >
                         ({count})
@@ -516,18 +193,10 @@ export default function OrdersPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/60">
                       <tr>
-                        <th className="text-left px-4 py-3 font-semibold text-foreground">
-                          No. Invoice
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold text-foreground">
-                          Tanggal
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold text-foreground">
-                          Status
-                        </th>
-                        <th className="text-right px-4 py-3 font-semibold text-foreground">
-                          Total
-                        </th>
+                        <th className="text-left px-4 py-3 font-semibold text-foreground">No. Invoice</th>
+                        <th className="text-left px-4 py-3 font-semibold text-foreground">Tanggal</th>
+                        <th className="text-left px-4 py-3 font-semibold text-foreground">Status</th>
+                        <th className="text-right px-4 py-3 font-semibold text-foreground">Total</th>
                         <th className="px-4 py-3" />
                       </tr>
                     </thead>
@@ -535,17 +204,13 @@ export default function OrdersPage() {
                       {filtered.map((order) => (
                         <tr
                           key={order.id}
-                          className="hover:bg-muted/30 transition"
+                          onClick={() => goToDetail(order.invoice_number)}
+                          className="hover:bg-muted/30 transition cursor-pointer"
                         >
                           <td className="px-4 py-4">
-                            <button
-                              onClick={() =>
-                                setSelectedInvoice(order.invoice_number)
-                              }
-                              className="font-mono text-primary hover:underline text-sm font-semibold"
-                            >
+                            <span className="font-mono text-primary text-sm font-semibold">
                               {order.invoice_number}
-                            </button>
+                            </span>
                           </td>
                           <td className="px-4 py-4 text-muted-foreground">
                             <span className="flex items-center gap-1.5">
@@ -559,15 +224,8 @@ export default function OrdersPage() {
                           <td className="px-4 py-4 text-right font-semibold text-foreground">
                             {formatRupiah(order.grand_total)}
                           </td>
-                          <td className="px-4 py-4 text-right">
-                            <button
-                              onClick={() =>
-                                setSelectedInvoice(order.invoice_number)
-                              }
-                              className="text-muted-foreground hover:text-foreground transition"
-                            >
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
+                          <td className="px-4 py-4 text-right text-muted-foreground">
+                            <ChevronRight className="w-4 h-4 ml-auto" />
                           </td>
                         </tr>
                       ))}
@@ -580,7 +238,7 @@ export default function OrdersPage() {
                   {filtered.map((order) => (
                     <button
                       key={order.id}
-                      onClick={() => setSelectedInvoice(order.invoice_number)}
+                      onClick={() => goToDetail(order.invoice_number)}
                       className="w-full bg-card border border-border rounded-lg p-4 text-left hover:shadow-md transition"
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
@@ -606,14 +264,6 @@ export default function OrdersPage() {
         </main>
       </div>
       <Footer />
-
-      {selectedInvoice && session?.accessToken && (
-        <InvoiceModal
-          invoiceNumber={selectedInvoice}
-          accessToken={(session as any).accessToken}
-          onClose={() => setSelectedInvoice(null)}
-        />
-      )}
     </>
   );
 }
