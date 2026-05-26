@@ -13,9 +13,10 @@ npm run dev      # Dev server at http://localhost:3000
 npm run build    # Production build
 npm run start    # Run the production build
 npm run lint     # ESLint
+npx vitest       # Unit tests (Vitest)
 ```
 
-No automated tests — **verify changes manually in the browser** before reporting a task as done. Check the golden path (browse → cart → checkout → payment) and watch for regressions in other flows.
+Unit tests live in `app/api/endpoints/*.test.ts` (Vitest). **Also verify changes manually in the browser** before reporting a task as done. Check the golden path (browse → cart → checkout → payment) and watch for regressions in other flows.
 
 ## Stack
 
@@ -32,8 +33,12 @@ No automated tests — **verify changes manually in the browser** before reporti
 | Path | Role |
 |---|---|
 | `app/` | App Router pages — `page.tsx`, `checkout/`, `dashboard/`, `login/`, `register/`, `payment-success/`, `tentang-kami/`, `not-found.tsx`. |
+| `app/dashboard/orders/` | Order list with status filters. |
+| `app/dashboard/orders/[invoice]/` | Order detail page with KiriminAja shipping tracking timeline. |
+| `app/dashboard/edit-profile/` | Edit display name and email for the logged-in customer. |
+| `app/dashboard/edit-addresses/` | Manage saved delivery addresses. |
 | `app/api/client.ts` | Single axios instance using `NEXT_PUBLIC_BE_ROUTE` as base URL. |
-| `app/api/endpoints/` | One module per backend call — `all_active_products.ts`, `checkout.ts`, `transaction_by_invoicenumber.ts`. |
+| `app/api/endpoints/` | One module per backend call — `all_active_products.ts`, `checkout.ts`, `transaction_by_invoicenumber.ts`, `profile.ts`. |
 | `app/api/auth/` | next-auth route handler. |
 | `app/api/kiriminaja/[...path]/route.ts` | **Server-side proxy** to KiriminAja. Injects `KIRIMINAJA_API_KEY`; the browser must never call upstream directly. |
 | `app/types/` | Shared TypeScript types. |
