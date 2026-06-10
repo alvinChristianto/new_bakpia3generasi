@@ -10,6 +10,19 @@ export const metadata: Metadata = {
   title: 'Tentang Kami - Bakpia 3 Generasi',
   description: 'Pelajari sejarah dan keunikan Bakpia 3 Generasi. Produk bakpia autentik dengan resep tradisional yang telah dipercaya selama puluhan tahun.',
   keywords: ['tentang kami', 'bakpia jogja', 'bakpia istimewa', 'sejarah bakpia'],
+  alternates: { canonical: '/tentang-kami' },
+  openGraph: {
+    title: 'Tentang Kami - Bakpia 3 Generasi',
+    description: 'Pelajari sejarah dan keunikan Bakpia 3 Generasi. Produk bakpia autentik dengan resep tradisional yang telah dipercaya selama puluhan tahun.',
+    url: '/tentang-kami',
+    images: [{ url: '/bakpia-tentang-kami.jpg', width: 1200, height: 630, alt: 'Tentang Bakpia 3 Generasi' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tentang Kami - Bakpia 3 Generasi',
+    description: 'Pelajari sejarah dan keunikan Bakpia 3 Generasi.',
+    images: ['/bakpia-tentang-kami.jpg'],
+  },
 }
 
 export default function TentangKamiPage() {

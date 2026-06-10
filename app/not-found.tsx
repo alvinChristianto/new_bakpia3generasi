@@ -1,8 +1,15 @@
+import { Metadata } from 'next'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { Home, Search } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Halaman Tidak Ditemukan',
+  description: 'Halaman yang Anda cari tidak ada. Kembali ke beranda untuk menelusuri produk kami.',
+  robots: { index: false, follow: false },
+}
 
 export default function NotFound() {
   return (
