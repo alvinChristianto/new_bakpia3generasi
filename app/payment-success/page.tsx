@@ -176,7 +176,7 @@ export default function PaymentSuccessPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-slate-50 py-8 px-4 md:py-12">
+      <main className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8 md:py-16">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <div className="flex justify-center mb-4">
@@ -194,9 +194,9 @@ export default function PaymentSuccessPage() {
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* Left Column: Summary */}
-            <div className="bg-white shadow-sm border border-slate-200 rounded-xl p-6 space-y-6">
+            <div className="bg-card shadow-sm border border-border rounded-xl p-6 space-y-6">
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
                   ID Transaksi
                 </p>
                 <p className="text-lg font-mono font-bold text-primary">
@@ -205,41 +205,41 @@ export default function PaymentSuccessPage() {
               </div>
 
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                   Alamat Pengiriman/Pengambilan
                 </p>
-                <p className="text-sm text-slate-700 leading-relaxed mb-2 whitespace-pre-line">
+                <p className="text-sm text-foreground leading-relaxed mb-2 whitespace-pre-line">
                   {orderData.shippingAddress}
                 </p>
                 {orderData.isDelivery && (
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
+                  <div className="bg-muted/50 p-3 rounded-lg border border-border space-y-1">
                     {orderData.courierName && (
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         Kurir:{" "}
-                        <span className="font-bold text-slate-900">
+                        <span className="font-bold text-foreground">
                           {orderData.courierName}
                         </span>
                       </p>
                     )}
                     {orderData.courierService && (
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         Layanan:{" "}
-                        <span className="font-bold text-slate-900">
+                        <span className="font-bold text-foreground">
                           {orderData.courierService}
                         </span>
                       </p>
                     )}
                     {orderData.trackingNumber && (
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         No. Resi:{" "}
-                        <span className="font-bold text-slate-900">
+                        <span className="font-bold text-foreground">
                           {orderData.trackingNumber}
                         </span>
                       </p>
                     )}
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       Estimasi Tiba:{" "}
-                      <span className="font-bold text-slate-900">
+                      <span className="font-bold text-foreground">
                         {orderData.estimatedDelivery}
                       </span>
                     </p>
@@ -262,10 +262,10 @@ export default function PaymentSuccessPage() {
                 </p>
               </div>
 
-              <div className="bg-white shadow-sm border border-slate-200 rounded-xl p-5">
-                <div className="flex items-center gap-2 mb-4 border-b pb-3">
-                  <ShoppingBag className="w-4 h-4 text-slate-400" />
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <div className="bg-card shadow-sm border border-border rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+                  <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     Detail Item
                   </p>
                 </div>
@@ -276,28 +276,28 @@ export default function PaymentSuccessPage() {
                       className="flex justify-between items-start text-sm"
                     >
                       <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800">
+                        <span className="font-semibold text-foreground">
                           {item.product_name_snapshot}
                         </span>
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-muted-foreground">
                           Qty: {item.quantity}
                         </span>
                       </div>
-                      <span className="font-bold text-slate-900">
+                      <span className="font-bold text-foreground">
                         {formatRupiah(item.price_per_item)}
                       </span>
                     </div>
                   ))}
 
                   {/* Fees Section */}
-                  <div className="border-t pt-3 mt-3 space-y-2">
-                    <div className="flex justify-between items-center text-[13px] text-slate-500">
+                  <div className="border-t border-border pt-3 mt-3 space-y-2">
+                    <div className="flex justify-between items-center text-[13px] text-muted-foreground">
                       <span>Biaya Pengiriman</span>
                       <span>{formatRupiah(orderData.shippingCost || 0)}</span>
                     </div>
 
-                    <div className="flex justify-between items-center text-[13px] text-slate-500">
-                      <span>Biaya admin </span>
+                    <div className="flex justify-between items-center text-[13px] text-muted-foreground">
+                      <span>Biaya admin</span>
                       <span>{formatRupiah(orderData.service_fee || 0)}</span>
                     </div>
                   </div>
@@ -311,7 +311,7 @@ export default function PaymentSuccessPage() {
             <Link href="/" className="w-full">
               <Button
                 variant="outline"
-                className="w-full h-12 border-2 hover:bg-slate-100 transition-colors"
+                className="w-full h-12 border-2 hover:bg-muted transition-colors"
               >
                 Kembali Beranda
               </Button>
@@ -323,7 +323,7 @@ export default function PaymentSuccessPage() {
             </Link>
           </div>
 
-          <p className="text-center text-xs text-slate-400">
+          <p className="text-center text-xs text-muted-foreground">
             Butuh bantuan? Tim support kami siap membantu di{" "}
             <span className="text-primary font-bold">support@thecabin.com</span>
           </p>

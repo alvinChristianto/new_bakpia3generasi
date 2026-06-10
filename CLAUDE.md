@@ -123,7 +123,24 @@ Anything prefixed `NEXT_PUBLIC_` is shipped to the browser. Do not add secrets w
    - Use existing shadcn primitives from `components/ui/` before adding new ones.
 5. Persist UX state via the existing stores (Cart Context or shipping Zustand). Don't add a third store unless the state genuinely doesn't fit either.
 6. For anything under `/dashboard/**`, confirm `middleware.ts` already protects the route.
-7. Run `npm run lint` and **open the browser** to walk through the new flow before declaring done.
+7. **Run `/ui-check <file>` on every new or modified UI file** and fix all findings before proceeding.
+8. Run `npm run lint` and **open the browser** to walk through the new flow before declaring done.
+
+## UI Consistency — Mandatory for Every Frontend Task
+
+The `/ui-check` skill (`../.claude/commands/ui-check.md`) defines the Bakpia design system rules. It **must be applied** to every file that touches UI — new pages, new components, edits to existing ones.
+
+**When to run it:**
+- After writing or editing any `page.tsx`, `layout.tsx`, or `*.tsx` component.
+- Before marking any frontend task done.
+
+**What it enforces:** color tokens (`bg-card`, `text-muted-foreground`, `border-border`, etc.), typography hierarchy, spacing/layout, card templates, button variants, form patterns, loading skeletons, empty states, status badge config, feedback icons, responsive breakpoints, and z-index.
+
+Quick reference of the most-broken rules:
+- Never hardcode `text-gray-*` or `bg-gray-*` — use `text-muted-foreground` / `bg-muted`.
+- Every loading branch must show skeleton cards (`animate-pulse`), never the empty-state message.
+- All prices: `new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount)`.
+- All buttons follow the three variants: primary (`bg-primary`), outline (`border-border`), destructive (`text-destructive`).
 
 ## Things to Avoid
 

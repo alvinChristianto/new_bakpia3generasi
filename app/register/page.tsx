@@ -97,7 +97,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleGoogleAuth}
                   disabled={isLoading}
-                  className="w-full px-4 py-2 border border-amber-300 rounded-lg text-sm font-medium bg-white hover:bg-amber-50 transition disabled:opacity-50"
+                  className="w-full px-4 py-2 border border-amber-300 rounded-lg text-sm font-medium bg-background hover:bg-muted transition disabled:opacity-50"
                 >
                   {isLoading ? "Memproses..." : "Masuk dengan Google"}
                 </button>

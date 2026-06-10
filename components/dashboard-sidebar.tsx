@@ -51,7 +51,7 @@ export function DashboardSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed top-20 left-4 z-40 p-2 hover:bg-muted rounded-lg transition"
+        className="md:hidden fixed top-20 left-4 z-50 p-2 hover:bg-muted rounded-lg transition"
       >
         {isOpen ? (
           <X className="w-6 h-6 text-foreground" />
@@ -70,7 +70,7 @@ export function DashboardSidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static w-64 h-screen bg-card border-r border-border z-30 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed md:static w-64 h-screen bg-card border-r border-border z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         } md:top-0 top-16 overflow-y-auto`}
       >
