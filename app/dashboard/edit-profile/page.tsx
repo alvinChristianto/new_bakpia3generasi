@@ -5,10 +5,10 @@ import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { User, Mail, Lock, Phone, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "next-auth/react";
-import { getProfile } from "@/app/api/endpoints/profile";
+import { getProfile, updateProfile } from "@/app/api/endpoints/profile";
 
 interface PasswordData {
   currentPassword: string;
@@ -21,6 +21,8 @@ const EditProfilePage = () => {
 
   // Profile state — seeded from session
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
@@ -44,7 +46,10 @@ const EditProfilePage = () => {
   useEffect(() => {
     const token = (session as any)?.accessToken;
     if (!token) return;
-    getProfile(token).then((profile) => setName(profile.name ?? "")).catch(() => {});
+    getProfile(token).then((profile) => {
+      setName(profile.name ?? "");
+      setPhone(profile.phone_number ?? "");
+    }).catch(() => {});
   }, [(session as any)?.accessToken]);
 
   // ── Profile validation ──────────────────────────────────────────────
@@ -57,7 +62,15 @@ const EditProfilePage = () => {
     return "";
   })();
 
-  const profileCanSubmit = name.trim() !== "" && nameError === "";
+  const phoneError = (() => {
+    if (!phone.trim()) return "";
+    const clean = phone.replace(/[-\s]/g, "");
+    if (!/^(\+62|08)[0-9]{9,11}$/.test(clean))
+      return "Nomor telepon tidak valid (harus dimulai dengan +62 atau 08)";
+    return "";
+  })();
+
+  const profileCanSubmit = name.trim() !== "" && nameError === "" && phoneError === "";
 
   // ── Password validation ─────────────────────────────────────────────
   const { currentPassword, newPassword, confirmPassword } = passwordData;
@@ -77,24 +90,12 @@ const EditProfilePage = () => {
     setProfileSuccess("");
     setProfileLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BE_ROUTE}/api/profile`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${(session as any)?.accessToken}`,
-          },
-          body: JSON.stringify({ name }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal memperbarui profil");
+      const token = (session as any)?.accessToken;
+      await updateProfile(token, { name, phone_number: phone.trim() || null });
       setProfileSuccess("Profil berhasil diperbarui!");
       setTimeout(() => setProfileSuccess(""), 3000);
     } catch (err: any) {
-      setProfileError(err.message);
+      setProfileError(err.message || "Gagal memperbarui profil");
     } finally {
       setProfileLoading(false);
     }
@@ -209,6 +210,36 @@ const EditProfilePage = () => {
                       <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         {nameError}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Nomor Telepon{" "}
+                      <span className="text-xs text-muted-foreground">(opsional)</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => {
+                          setPhone(e.target.value.replace(/[^\d+\-\s]/g, ""));
+                          setPhoneTouched(true);
+                        }}
+                        onBlur={() => setPhoneTouched(true)}
+                        className={`w-full pl-10 pr-4 py-2 border rounded-lg bg-background text-foreground placeholder-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                          phoneTouched && phoneError ? "border-destructive" : "border-border"
+                        }`}
+                        placeholder="+62812345678 atau 08123456789"
+                      />
+                    </div>
+                    {phoneTouched && phoneError && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        {phoneError}
                       </div>
                     )}
                   </div>

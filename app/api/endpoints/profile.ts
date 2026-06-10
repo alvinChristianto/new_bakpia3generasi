@@ -13,3 +13,12 @@ export async function getProfile(accessToken: string): Promise<Profile> {
   });
   return data;
 }
+
+export async function updateProfile(
+  accessToken: string,
+  payload: { name: string; phone_number: string | null }
+): Promise<void> {
+  await apiClient.put("/api/profile", payload, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
