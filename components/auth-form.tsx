@@ -4,7 +4,7 @@ import React from "react"
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export interface RegisterData {
@@ -22,10 +22,12 @@ export interface LoginData {
 
 interface RegisterFormProps {
   onSubmit: (data: RegisterData) => void
+  isLoading?: boolean
 }
 
 interface LoginFormProps {
   onSubmit: (data: LoginData) => void
+  isLoading?: boolean
 }
 
 // Validation helpers
@@ -74,7 +76,7 @@ const getPasswordError = (value: string): string => {
   return ''
 }
 
-export function RegisterForm({ onSubmit }: RegisterFormProps) {
+export function RegisterForm({ onSubmit, isLoading = false }: RegisterFormProps) {
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     email: '',
@@ -250,14 +252,21 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
 
       <Button
         type="submit"
-        disabled={!isFormValid()}
-        className={`w-full py-2 font-semibold transition ${
-          isFormValid()
+        disabled={!isFormValid() || isLoading}
+        className={`w-full py-2 font-semibold transition flex items-center justify-center gap-2 ${
+          isFormValid() && !isLoading
             ? 'bg-primary text-primary-foreground hover:bg-primary/90'
             : 'bg-muted text-muted-foreground cursor-not-allowed'
         }`}
       >
-        Daftar
+        {isLoading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Memproses...
+          </>
+        ) : (
+          'Daftar'
+        )}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
@@ -270,7 +279,7 @@ export function RegisterForm({ onSubmit }: RegisterFormProps) {
   )
 }
 
-export function LoginForm({ onSubmit }: LoginFormProps) {
+export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
   const [formData, setFormData] = useState<LoginData>({
     email: '',
     password: '',
@@ -361,14 +370,21 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
       <Button
         type="submit"
-        disabled={!isFormValid()}
-        className={`w-full py-2 font-semibold transition ${
-          isFormValid()
+        disabled={!isFormValid() || isLoading}
+        className={`w-full py-2 font-semibold transition flex items-center justify-center gap-2 ${
+          isFormValid() && !isLoading
             ? 'bg-primary text-primary-foreground hover:bg-primary/90'
             : 'bg-muted text-muted-foreground cursor-not-allowed'
         }`}
       >
-        Masuk
+        {isLoading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Memproses...
+          </>
+        ) : (
+          'Masuk'
+        )}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">

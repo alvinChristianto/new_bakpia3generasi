@@ -110,7 +110,7 @@ export default function RegisterPage() {
               )
             )}
 
-            <RegisterForm onSubmit={handleRegister} />
+            <RegisterForm onSubmit={handleRegister} isLoading={isLoading} />
 
             {/* Or Divider */}
             <div className="relative my-6">

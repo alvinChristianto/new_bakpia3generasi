@@ -64,7 +64,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            <LoginForm onSubmit={handleLogin} />
+            <LoginForm onSubmit={handleLogin} isLoading={isLoading} />
 
             {/* Forgot Password Link */}
             <div className="text-center mt-4">
