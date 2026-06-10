@@ -25,6 +25,7 @@ const categories = [
 export function ProductsSection() {
   const [selectedCategory, setSelectedCategory] = useState('semua')
   const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
   const [modalProduct, setModalProduct] = useState<Product | null>(null)
   const { addItem } = useCart()
 
@@ -37,6 +38,8 @@ export function ProductsSection() {
       }
     } catch (error) {
       console.error('Error fetching products:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -99,7 +102,20 @@ export function ProductsSection() {
 
           {/* Main Content - Product Grid */}
           <main className="flex-1">
-            {filteredProducts.length > 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="bg-card rounded-xl shadow-sm overflow-hidden animate-pulse">
+                    <div className="bg-muted h-48 w-full" />
+                    <div className="p-4 space-y-3">
+                      <div className="bg-muted rounded h-4 w-3/4" />
+                      <div className="bg-muted rounded h-4 w-1/2" />
+                      <div className="bg-muted rounded h-8 w-full mt-2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
                   <ProductCard
