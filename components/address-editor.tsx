@@ -108,7 +108,7 @@ export function AddressEditor({
 
   const validatePickup = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!pickupForm.storeId) newErrors.storeId = "Pilih toko terlebih dahulu";
+    if (!pickupForm.storeId) newErrors.storeId = "Pilih outlet terlebih dahulu";
     if (!pickupForm.pickupDate) {
       newErrors.pickupDate = "Tanggal pengambilan harus diisi";
     } else if (pickupForm.pickupDate < getMinDate()) {
@@ -194,7 +194,7 @@ export function AddressEditor({
               }`}
             >
               <Store className="w-4 h-4" />
-              Ambil di Toko
+              Ambil di Outlet
             </button>
           </div>
 
@@ -260,7 +260,7 @@ export function AddressEditor({
               {/* Store selector */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Pilih Toko *
+                  Pilih Outlet *
                 </label>
                 <select
                   value={pickupForm.storeId}
@@ -272,7 +272,7 @@ export function AddressEditor({
                     errors.storeId ? "border-destructive" : "border-border"
                   } focus:outline-none focus:ring-2 focus:ring-primary/50`}
                 >
-                  <option value="">-- Pilih Toko --</option>
+                  <option value="">-- Pilih Outlet --</option>
                   {OFFLINE_STORES.map((store) => (
                     <option key={store.id} value={store.id}>
                       {store.name}

@@ -234,7 +234,7 @@ export default function CheckoutPage() {
     if (!address) {
       triggerModal(
         "Metode Pengiriman Belum Dipilih",
-        "Silakan pilih alamat pengiriman atau toko pengambilan terlebih dahulu.",
+        "Silakan pilih alamat pengiriman atau outlet pengambilan terlebih dahulu.",
         "warning",
       );
       
@@ -441,7 +441,7 @@ export default function CheckoutPage() {
                 ) : (
                   <div className="space-y-2 mb-3">
                     <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
-                      Pengambilan di Toko
+                      Pengambilan di Outlet
                     </span>
                     <p className="text-sm text-foreground font-medium">
                       {address.storeName}
