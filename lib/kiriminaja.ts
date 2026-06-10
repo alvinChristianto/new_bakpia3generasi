@@ -38,12 +38,17 @@ async function post<T>(
 }
 
 // ─── Coverage Area ────────────────────────────────────────────────────────────
+// All four endpoints below proxy through /api/kiriminaja/[...path] → {KIRIMINAJA_BASE_URL}/api/mitra/<path>
+// Sandbox:    https://tdev.kiriminaja.com/api/mitra/<path>
+// Production: https://client.kiriminaja.com/api/mitra/<path>
 
+// POST /api/mitra/province
 export async function getProvinces(): Promise<Province[]> {
   const data = await post<{ status: boolean; datas: Province[] }>("/province");
   return data.datas;
 }
 
+// POST /api/mitra/city — body: { provinsi_id }
 export async function getCities(provinsi_id: number): Promise<City[]> {
   const data = await post<{ status: boolean; datas: City[] }>("/city", {
     provinsi_id,
@@ -51,6 +56,7 @@ export async function getCities(provinsi_id: number): Promise<City[]> {
   return data.datas;
 }
 
+// POST /api/mitra/kecamatan — body: { kabupaten_id }
 export async function getDistricts(kabupaten_id: number): Promise<District[]> {
   const data = await post<{ status: boolean; datas: District[] }>(
     "/kecamatan",
@@ -61,6 +67,7 @@ export async function getDistricts(kabupaten_id: number): Promise<District[]> {
   return data.datas;
 }
 
+// POST /api/mitra/kelurahan — body: { kecamatan_id }
 export async function getSubDistricts(
   kecamatan_id: number,
 ): Promise<SubDistrict[]> {
@@ -72,6 +79,9 @@ export async function getSubDistricts(
 }
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
+// POST /api/mitra/v6.1/shipping_price
+// Sandbox:    https://tdev.kiriminaja.com/api/mitra/v6.1/shipping_price
+// Production: https://client.kiriminaja.com/api/mitra/v6.1/shipping_price
 export interface ExpressPricingPayload {
   destination: number; // kecamatan_id
   subdistrict_destination: number; // kelurahan_id
