@@ -9,7 +9,7 @@ import { ArrowRight } from 'lucide-react'
 export const metadata: Metadata = {
   title: 'Tentang Kami - Bakpia 3 Generasi',
   description: 'Pelajari sejarah dan keunikan Bakpia 3 Generasi. Produk bakpia autentik dengan resep tradisional yang telah dipercaya selama puluhan tahun.',
-  keywords: ['tentang kami', 'bakpia jogja', 'bakpia istimewa', 'sejarah bakpia'],
+  keywords: ['tentang kami', 'bakpia 3 generasi', 'bakpia istimewa', 'sejarah bakpia'],
   alternates: { canonical: '/tentang-kami' },
   openGraph: {
     title: 'Tentang Kami - Bakpia 3 Generasi',

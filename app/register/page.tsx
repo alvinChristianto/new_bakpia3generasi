@@ -75,7 +75,7 @@ export default function RegisterPage() {
           {/* Logo/Brand */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              Bakpia Jogja
+              Bakpia 3 Generasi
             </h1>
             <p className="text-muted-foreground">Istimewa</p>
           </div>
