@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { X, AlertCircle, Truck, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import type { AddressData } from "../app/types/address";
 import { getOutlets, type Outlet } from "@/app/api/endpoints/outlets";
 
@@ -48,6 +49,16 @@ const DAY_NAMES: Record<number, string> = {
   6: "Sabtu",
 };
 
+const DAY_NAME_TO_NUM: Record<string, number> = {
+  Minggu: 0,
+  Senin: 1,
+  Selasa: 2,
+  Rabu: 3,
+  Kamis: 4,
+  Jumat: 5,
+  Sabtu: 6,
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AddressEditor({
@@ -83,6 +94,25 @@ export function AddressEditor({
 
   // Derive selectedStore early so validation helpers can use it
   const selectedStore = outlets.find((s) => s.id_outlet === pickupForm.storeId);
+
+  // ── Calendar computed values ─────────────────────────────────────────────
+
+  const minDate = new Date(getMinDate() + "T12:00:00");
+
+  // Weekday numbers (0=Sun…6=Sat) that are NOT in the outlet's operational days
+  const disabledWeekdays: number[] =
+    selectedStore?.operational_day?.length
+      ? [0, 1, 2, 3, 4, 5, 6].filter(
+          (n) =>
+            !selectedStore.operational_day!.some(
+              (d) => DAY_NAME_TO_NUM[d] === n,
+            ),
+        )
+      : [];
+
+  const selectedCalendarDate = pickupForm.pickupDate
+    ? new Date(pickupForm.pickupDate + "T12:00:00")
+    : undefined;
 
   // ── Validation helpers using outlet's operational schedule ───────────────
 
@@ -173,9 +203,9 @@ export function AddressEditor({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-lg max-w-md w-full shadow-lg">
+      <div className="bg-card border border-border rounded-lg max-w-md w-full shadow-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
           <h2 className="text-lg font-bold text-foreground">
             Metode Pengiriman
           </h2>
@@ -187,7 +217,7 @@ export function AddressEditor({
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 overflow-y-auto flex-1">
           {/* ── Tab selector ── */}
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -292,9 +322,11 @@ export function AddressEditor({
                     <select
                       value={pickupForm.storeId}
                       onChange={(e) => {
+                        // Clear date and time when outlet changes — new outlet may have different schedule
                         setPickupForm({
                           ...pickupForm,
                           storeId: e.target.value,
+                          pickupDate: "",
                           pickupTime: "",
                         });
                         if (errors.storeId)
@@ -354,85 +386,87 @@ export function AddressEditor({
                 )}
               </div>
 
-              {/* Date + Time */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Tanggal *
-                  </label>
-                  <input
-                    type="date"
-                    value={pickupForm.pickupDate}
-                    min={getMinDate()}
-                    onChange={(e) => {
-                      setPickupForm({
-                        ...pickupForm,
-                        pickupDate: e.target.value,
-                      });
+              {/* Date picker — calendar with disabled non-operational weekdays */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Tanggal Pengambilan *
+                </label>
+                <div
+                  className={`border rounded-lg overflow-hidden flex justify-center ${
+                    errors.pickupDate ? "border-destructive" : "border-border"
+                  }`}
+                >
+                  <Calendar
+                    mode="single"
+                    selected={selectedCalendarDate}
+                    onSelect={(date) => {
+                      const str = date
+                        ? date.toISOString().split("T")[0]
+                        : "";
+                      setPickupForm({ ...pickupForm, pickupDate: str });
                       if (errors.pickupDate)
                         setErrors({ ...errors, pickupDate: "" });
                     }}
-                    className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm transition ${
-                      errors.pickupDate
-                        ? "border-destructive"
-                        : "border-border"
-                    } focus:outline-none focus:ring-2 focus:ring-primary/50`}
+                    disabled={[
+                      { before: minDate },
+                      ...(disabledWeekdays.length > 0
+                        ? [{ dayOfWeek: disabledWeekdays }]
+                        : []),
+                    ]}
                   />
-                  {errors.pickupDate && (
-                    <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      <span>{errors.pickupDate}</span>
-                    </div>
-                  )}
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Waktu *
-                  </label>
-                  <input
-                    type="time"
-                    value={pickupForm.pickupTime}
-                    min={opStart}
-                    max={opEnd}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (!val) {
-                        setPickupForm({ ...pickupForm, pickupTime: "" });
-                        return;
-                      }
-                      if (isValidPickupTime(val)) {
-                        setPickupForm({ ...pickupForm, pickupTime: val });
-                        if (errors.pickupTime)
-                          setErrors({ ...errors, pickupTime: "" });
-                      }
-                    }}
-                    className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm transition ${
-                      errors.pickupTime
-                        ? "border-destructive"
-                        : "border-border"
-                    } focus:outline-none focus:ring-2 focus:ring-primary/50`}
-                  />
-                  {errors.pickupTime && (
-                    <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      <span>{errors.pickupTime}</span>
-                    </div>
-                  )}
-                </div>
+                {errors.pickupDate && (
+                  <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{errors.pickupDate}</span>
+                  </div>
+                )}
               </div>
 
-              <p className="text-xs text-muted-foreground">
-                {selectedStore?.operational_hour
-                  ? `Jam operasional outlet: ${opStart}–${opEnd} WIB`
-                  : "Jam operasional: 09:00–18:00 WIB"}
-              </p>
+              {/* Time picker */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Waktu Pengambilan *
+                </label>
+                <input
+                  type="time"
+                  value={pickupForm.pickupTime}
+                  min={opStart}
+                  max={opEnd}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) {
+                      setPickupForm({ ...pickupForm, pickupTime: "" });
+                      return;
+                    }
+                    if (isValidPickupTime(val)) {
+                      setPickupForm({ ...pickupForm, pickupTime: val });
+                      if (errors.pickupTime)
+                        setErrors({ ...errors, pickupTime: "" });
+                    }
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm transition ${
+                    errors.pickupTime ? "border-destructive" : "border-border"
+                  } focus:outline-none focus:ring-2 focus:ring-primary/50`}
+                />
+                {errors.pickupTime && (
+                  <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{errors.pickupTime}</span>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {selectedStore?.operational_hour
+                    ? `Jam operasional outlet: ${opStart}–${opEnd} WIB`
+                    : "Jam operasional: 09:00–18:00 WIB"}
+                </p>
+              </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-border">
+        <div className="flex gap-3 p-6 border-t border-border flex-shrink-0">
           <Button
             variant="outline"
             onClick={onClose}
