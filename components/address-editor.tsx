@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { X, AlertCircle, Truck, Store } from "lucide-react";
+import { X, AlertCircle, Truck, Store, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { AddressData } from "../app/types/address";
 import { getOutlets, type Outlet } from "@/app/api/endpoints/outlets";
 
@@ -203,7 +208,7 @@ export function AddressEditor({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card border border-border rounded-lg max-w-md w-full shadow-lg max-h-[90vh] flex flex-col">
+      <div className="bg-card border border-border rounded-lg max-w-md w-full shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
           <h2 className="text-lg font-bold text-foreground">
@@ -217,7 +222,7 @@ export function AddressEditor({
           </button>
         </div>
 
-        <div className="p-6 space-y-4 overflow-y-auto flex-1">
+        <div className="p-6 space-y-4">
           {/* ── Tab selector ── */}
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -386,35 +391,58 @@ export function AddressEditor({
                 )}
               </div>
 
-              {/* Date picker — calendar with disabled non-operational weekdays */}
+              {/* Date picker — compact trigger that opens calendar popover */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Tanggal Pengambilan *
                 </label>
-                <div
-                  className={`border rounded-lg overflow-hidden flex justify-center ${
-                    errors.pickupDate ? "border-destructive" : "border-border"
-                  }`}
-                >
-                  <Calendar
-                    mode="single"
-                    selected={selectedCalendarDate}
-                    onSelect={(date) => {
-                      const str = date
-                        ? date.toISOString().split("T")[0]
-                        : "";
-                      setPickupForm({ ...pickupForm, pickupDate: str });
-                      if (errors.pickupDate)
-                        setErrors({ ...errors, pickupDate: "" });
-                    }}
-                    disabled={[
-                      { before: minDate },
-                      ...(disabledWeekdays.length > 0
-                        ? [{ dayOfWeek: disabledWeekdays }]
-                        : []),
-                    ]}
-                  />
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className={`w-full flex items-center gap-2 px-3 py-2 border rounded-lg bg-background text-sm transition focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                        errors.pickupDate
+                          ? "border-destructive"
+                          : "border-border"
+                      } ${
+                        pickupForm.pickupDate
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      <CalendarIcon className="w-4 h-4 flex-shrink-0" />
+                      {pickupForm.pickupDate
+                        ? new Date(
+                            pickupForm.pickupDate + "T12:00:00",
+                          ).toLocaleDateString("id-ID", {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "Pilih tanggal"}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedCalendarDate}
+                      onSelect={(date) => {
+                        const str = date
+                          ? date.toISOString().split("T")[0]
+                          : "";
+                        setPickupForm({ ...pickupForm, pickupDate: str });
+                        if (errors.pickupDate)
+                          setErrors({ ...errors, pickupDate: "" });
+                      }}
+                      disabled={[
+                        { before: minDate },
+                        ...(disabledWeekdays.length > 0
+                          ? [{ dayOfWeek: disabledWeekdays }]
+                          : []),
+                      ]}
+                    />
+                  </PopoverContent>
+                </Popover>
                 {errors.pickupDate && (
                   <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -466,7 +494,7 @@ export function AddressEditor({
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-border flex-shrink-0">
+        <div className="flex gap-3 p-6 border-t border-border">
           <Button
             variant="outline"
             onClick={onClose}
