@@ -33,10 +33,19 @@ const getMinDate = () => {
   return tomorrow.toISOString().split("T")[0];
 };
 
-const isValidPickupTime = (time: string): boolean => {
-  if (!time) return false;
-  const [hours] = time.split(":").map(Number);
-  return hours >= 9 && hours < 18;
+const timeToMinutes = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+};
+
+const DAY_NAMES: Record<number, string> = {
+  0: "Minggu",
+  1: "Senin",
+  2: "Selasa",
+  3: "Rabu",
+  4: "Kamis",
+  5: "Jumat",
+  6: "Sabtu",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -72,28 +81,63 @@ export function AddressEditor({
       .finally(() => setOutletsLoading(false));
   }, []);
 
+  // Derive selectedStore early so validation helpers can use it
+  const selectedStore = outlets.find((s) => s.id_outlet === pickupForm.storeId);
+
+  // ── Validation helpers using outlet's operational schedule ───────────────
+
+  const isValidPickupTime = (time: string): boolean => {
+    if (!time) return false;
+    const { start, end } = selectedStore?.operational_hour ?? {
+      start: "09:00",
+      end: "18:00",
+    };
+    const t = timeToMinutes(time);
+    return t >= timeToMinutes(start) && t < timeToMinutes(end);
+  };
+
+  const isValidPickupDay = (date: string): boolean => {
+    if (!date || !selectedStore?.operational_day?.length) return true;
+    const dayName = DAY_NAMES[new Date(date + "T12:00:00").getDay()];
+    return selectedStore.operational_day.includes(dayName);
+  };
+
   // ── Pickup validation ────────────────────────────────────────────────────
 
   const isPickupValid =
     !!pickupForm.storeId &&
     !!pickupForm.pickupDate &&
     pickupForm.pickupDate >= getMinDate() &&
+    isValidPickupDay(pickupForm.pickupDate) &&
     !!pickupForm.pickupTime &&
     isValidPickupTime(pickupForm.pickupTime);
 
   const validatePickup = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!pickupForm.storeId) newErrors.storeId = "Pilih outlet terlebih dahulu";
+
+    if (!pickupForm.storeId) {
+      newErrors.storeId = "Pilih outlet terlebih dahulu";
+    }
+
     if (!pickupForm.pickupDate) {
       newErrors.pickupDate = "Tanggal pengambilan harus diisi";
     } else if (pickupForm.pickupDate < getMinDate()) {
       newErrors.pickupDate = "Tanggal pengambilan harus minimal besok";
+    } else if (!isValidPickupDay(pickupForm.pickupDate)) {
+      const days = selectedStore?.operational_day?.join(", ") ?? "";
+      newErrors.pickupDate = `Outlet ini hanya beroperasi: ${days}`;
     }
+
     if (!pickupForm.pickupTime) {
       newErrors.pickupTime = "Waktu pengambilan harus diisi";
     } else if (!isValidPickupTime(pickupForm.pickupTime)) {
-      newErrors.pickupTime = "Jam pengambilan harus antara 09:00 - 18:00 WIB";
+      const { start, end } = selectedStore?.operational_hour ?? {
+        start: "09:00",
+        end: "18:00",
+      };
+      newErrors.pickupTime = `Jam pengambilan harus antara ${start} – ${end} WIB`;
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -124,7 +168,8 @@ export function AddressEditor({
 
   if (!isOpen) return null;
 
-  const selectedStore = outlets.find((s) => s.id_outlet === pickupForm.storeId);
+  const opStart = selectedStore?.operational_hour?.start ?? "09:00";
+  const opEnd = selectedStore?.operational_hour?.end ?? "18:00";
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -247,7 +292,11 @@ export function AddressEditor({
                     <select
                       value={pickupForm.storeId}
                       onChange={(e) => {
-                        setPickupForm({ ...pickupForm, storeId: e.target.value });
+                        setPickupForm({
+                          ...pickupForm,
+                          storeId: e.target.value,
+                          pickupTime: "",
+                        });
                         if (errors.storeId)
                           setErrors({ ...errors, storeId: "" });
                       }}
@@ -264,7 +313,7 @@ export function AddressEditor({
                     </select>
 
                     {selectedStore && (
-                      <div className="mt-2 p-3 bg-muted rounded-lg text-xs space-y-0.5">
+                      <div className="mt-2 p-3 bg-muted rounded-lg text-xs space-y-1.5">
                         <p className="text-foreground font-medium">
                           {selectedStore.address}
                         </p>
@@ -273,17 +322,23 @@ export function AddressEditor({
                             {selectedStore.phone_number}
                           </p>
                         )}
-                        {(selectedStore.operational_day ||
-                          selectedStore.operational_hour) && (
+                        {selectedStore.operational_day &&
+                          selectedStore.operational_day.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-0.5">
+                              {selectedStore.operational_day.map((day) => (
+                                <span
+                                  key={day}
+                                  className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-medium"
+                                >
+                                  {day}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        {selectedStore.operational_hour && (
                           <p className="text-muted-foreground">
-                            {[
-                              selectedStore.operational_day,
-                              selectedStore.operational_hour
-                                ? selectedStore.operational_hour + " WIB"
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
+                            {selectedStore.operational_hour.start} –{" "}
+                            {selectedStore.operational_hour.end} WIB
                           </p>
                         )}
                       </div>
@@ -318,7 +373,9 @@ export function AddressEditor({
                         setErrors({ ...errors, pickupDate: "" });
                     }}
                     className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm transition ${
-                      errors.pickupDate ? "border-destructive" : "border-border"
+                      errors.pickupDate
+                        ? "border-destructive"
+                        : "border-border"
                     } focus:outline-none focus:ring-2 focus:ring-primary/50`}
                   />
                   {errors.pickupDate && (
@@ -336,23 +393,24 @@ export function AddressEditor({
                   <input
                     type="time"
                     value={pickupForm.pickupTime}
-                    min="09:00"
-                    max="17:59"
+                    min={opStart}
+                    max={opEnd}
                     onChange={(e) => {
                       const val = e.target.value;
                       if (!val) {
                         setPickupForm({ ...pickupForm, pickupTime: "" });
                         return;
                       }
-                      const [h] = val.split(":").map(Number);
-                      if (h >= 9 && h < 18) {
+                      if (isValidPickupTime(val)) {
                         setPickupForm({ ...pickupForm, pickupTime: val });
                         if (errors.pickupTime)
                           setErrors({ ...errors, pickupTime: "" });
                       }
                     }}
                     className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm transition ${
-                      errors.pickupTime ? "border-destructive" : "border-border"
+                      errors.pickupTime
+                        ? "border-destructive"
+                        : "border-border"
                     } focus:outline-none focus:ring-2 focus:ring-primary/50`}
                   />
                   {errors.pickupTime && (
@@ -365,7 +423,9 @@ export function AddressEditor({
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Jam operasional: 09:00–18:00 WIB
+                {selectedStore?.operational_hour
+                  ? `Jam operasional outlet: ${opStart}–${opEnd} WIB`
+                  : "Jam operasional: 09:00–18:00 WIB"}
               </p>
             </div>
           )}

@@ -5,8 +5,9 @@ export interface Outlet {
   name: string;
   address: string;
   phone_number: string | null;
-  operational_day: string | null;
-  operational_hour: string | null;
+  email: string | null;
+  operational_day: string[] | null;
+  operational_hour: { start: string; end: string } | null;
 }
 
 export async function getOutlets(): Promise<Outlet[]> {
