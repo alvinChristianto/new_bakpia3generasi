@@ -1,43 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { X, AlertCircle, Truck, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { AddressData, PickupAddress } from "../app/types/address";
-
-// ─── Offline stores (unchanged) ───────────────────────────────────────────────
-
-export interface OfflineStore {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-}
-
-const OFFLINE_STORES: OfflineStore[] = [
-  {
-    id: "1",
-    name: "Bakpia 3 Generasi - Jl Magelang",
-    address:
-      "Jl. Magelang No.Km. 5,8, Kutu Patran, Sinduadi, Kec. Mlati, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55284",
-    phone: "0821 3806 0002",
-  },
-  {
-    id: "2",
-    name: "Bakpia 3 Generasi - Jl Mataram",
-    address:
-      "Jl. Mataram No.50, Suryatmajan, Kec. Danurejan, Kota Yogyakarta, Daerah Istimewa Yogyakarta 55213",
-    phone: "0823 4231 2204",
-  },
-  {
-    id: "3",
-    name: "Bakpia 3 Generasi - The Cabin Hotel Tugu",
-    address:
-      "Jl. Margo Utomo No.9, Gowongan, Kec. Jetis, Kota Yogyakarta, Daerah Istimewa Yogyakarta 55232",
-    phone: "0821 3806 0002",
-  },
-];
+import type { AddressData } from "../app/types/address";
+import { getOutlets, type Outlet } from "@/app/api/endpoints/outlets";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -81,12 +49,10 @@ export function AddressEditor({
 }: AddressEditorProps) {
   const router = useRouter();
 
-  // Which tab is active in the modal
   const [activeTab, setActiveTab] = useState<"delivery" | "pickup">(
     currentAddress?.type ?? "delivery",
   );
 
-  // Pickup form state
   const [pickupForm, setPickupForm] = useState<PickupFormState>({
     storeId: currentAddress?.type === "pickup" ? currentAddress.storeId : "",
     pickupDate:
@@ -96,6 +62,15 @@ export function AddressEditor({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [outletsLoading, setOutletsLoading] = useState(false);
+
+  useEffect(() => {
+    setOutletsLoading(true);
+    getOutlets()
+      .then(setOutlets)
+      .finally(() => setOutletsLoading(false));
+  }, []);
 
   // ── Pickup validation ────────────────────────────────────────────────────
 
@@ -127,10 +102,10 @@ export function AddressEditor({
 
   const handleSavePickup = () => {
     if (!validatePickup()) return;
-    const store = OFFLINE_STORES.find((s) => s.id === pickupForm.storeId)!;
+    const store = outlets.find((s) => s.id_outlet === pickupForm.storeId)!;
     const pickup: AddressData = {
       type: "pickup",
-      storeId: store.id,
+      storeId: store.id_outlet,
       storeName: store.name,
       storeAddress: store.address,
       pickupDate: pickupForm.pickupDate,
@@ -149,6 +124,8 @@ export function AddressEditor({
 
   if (!isOpen) return null;
 
+  const selectedStore = outlets.find((s) => s.id_outlet === pickupForm.storeId);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-card border border-border rounded-lg max-w-md w-full shadow-lg">
@@ -159,7 +136,7 @@ export function AddressEditor({
           </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-muted rounded transition"
+            className="p-1 hover:bg-muted rounded-lg transition"
           >
             <X className="w-5 h-5 text-foreground" />
           </button>
@@ -201,7 +178,6 @@ export function AddressEditor({
           {/* ── Delivery tab ── */}
           {activeTab === "delivery" && (
             <div className="space-y-4">
-              {/* Show current delivery address if already set and courier exists */}
               {currentAddress?.type === "delivery" &&
                 currentAddress.courier && (
                   <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
@@ -222,7 +198,6 @@ export function AddressEditor({
                   </div>
                 )}
 
-              {/* Show stale warning when courier was cleared */}
               {currentAddress?.type === "delivery" &&
                 !currentAddress.courier && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -262,45 +237,66 @@ export function AddressEditor({
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Pilih Outlet *
                 </label>
-                <select
-                  value={pickupForm.storeId}
-                  onChange={(e) => {
-                    setPickupForm({ ...pickupForm, storeId: e.target.value });
-                    if (errors.storeId) setErrors({ ...errors, storeId: "" });
-                  }}
-                  className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm transition ${
-                    errors.storeId ? "border-destructive" : "border-border"
-                  } focus:outline-none focus:ring-2 focus:ring-primary/50`}
-                >
-                  <option value="">-- Pilih Outlet --</option>
-                  {OFFLINE_STORES.map((store) => (
-                    <option key={store.id} value={store.id}>
-                      {store.name}
-                    </option>
-                  ))}
-                </select>
+
+                {outletsLoading ? (
+                  <div className="space-y-2 animate-pulse">
+                    <div className="h-10 bg-muted rounded-lg" />
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      value={pickupForm.storeId}
+                      onChange={(e) => {
+                        setPickupForm({ ...pickupForm, storeId: e.target.value });
+                        if (errors.storeId)
+                          setErrors({ ...errors, storeId: "" });
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground text-sm transition ${
+                        errors.storeId ? "border-destructive" : "border-border"
+                      } focus:outline-none focus:ring-2 focus:ring-primary/50`}
+                    >
+                      <option value="">-- Pilih Outlet --</option>
+                      {outlets.map((store) => (
+                        <option key={store.id_outlet} value={store.id_outlet}>
+                          {store.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {selectedStore && (
+                      <div className="mt-2 p-3 bg-muted rounded-lg text-xs space-y-0.5">
+                        <p className="text-foreground font-medium">
+                          {selectedStore.address}
+                        </p>
+                        {selectedStore.phone_number && (
+                          <p className="text-muted-foreground">
+                            {selectedStore.phone_number}
+                          </p>
+                        )}
+                        {(selectedStore.operational_day ||
+                          selectedStore.operational_hour) && (
+                          <p className="text-muted-foreground">
+                            {[
+                              selectedStore.operational_day,
+                              selectedStore.operational_hour
+                                ? selectedStore.operational_hour + " WIB"
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
                 {errors.storeId && (
-                  <div className="flex items-center gap-2 mt-1 text-xs text-destructive">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.storeId}
+                  <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{errors.storeId}</span>
                   </div>
                 )}
-                {pickupForm.storeId &&
-                  (() => {
-                    const store = OFFLINE_STORES.find(
-                      (s) => s.id === pickupForm.storeId,
-                    );
-                    return (
-                      <div className="mt-2 p-3 bg-muted rounded-lg text-xs">
-                        <p className="text-foreground font-medium">
-                          {store?.address}
-                        </p>
-                        <p className="text-muted-foreground mt-0.5">
-                          {store?.phone}
-                        </p>
-                      </div>
-                    );
-                  })()}
               </div>
 
               {/* Date + Time */}
@@ -326,9 +322,9 @@ export function AddressEditor({
                     } focus:outline-none focus:ring-2 focus:ring-primary/50`}
                   />
                   {errors.pickupDate && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-destructive">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.pickupDate}
+                    <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{errors.pickupDate}</span>
                     </div>
                   )}
                 </div>
@@ -360,16 +356,16 @@ export function AddressEditor({
                     } focus:outline-none focus:ring-2 focus:ring-primary/50`}
                   />
                   {errors.pickupTime && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-destructive">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.pickupTime}
+                    <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{errors.pickupTime}</span>
                     </div>
                   )}
                 </div>
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Jam operasional: Senin–Minggu 09:00–18:00 WIB
+                Jam operasional: 09:00–18:00 WIB
               </p>
             </div>
           )}
@@ -389,11 +385,7 @@ export function AddressEditor({
             <Button
               onClick={handleSavePickup}
               disabled={!isPickupValid}
-              className={`flex-1 ${
-                isPickupValid
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-muted text-muted-foreground cursor-not-allowed"
-              }`}
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               Simpan
             </Button>
