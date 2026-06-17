@@ -153,6 +153,12 @@ export default function ShippingPage() {
 
   // ── package dimensions derived from cart quantities ────────────────────────
   const packageDimensions = calculatePackageDimensions(cart);
+  console.log("[KiriminAja] Package dimensions:", {
+    weight_grams: packageDimensions.weight,
+    length_cm: packageDimensions.length,
+    width_cm: packageDimensions.width,
+    height_cm: packageDimensions.height,
+  });
 
   // ── pre-populate from existing delivery address in store ───────────────────
   const existingDelivery = address?.type === "delivery" ? address : null;

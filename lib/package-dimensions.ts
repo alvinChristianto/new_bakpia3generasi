@@ -2,10 +2,10 @@
  * Physical spec per 1 bakpia box.
  * Update these values if packaging changes.
  */
-export const PRODUCT_WEIGHT_GRAMS = 400;
-export const PRODUCT_LENGTH_CM = 15;
-export const PRODUCT_WIDTH_CM = 15;
-export const PRODUCT_HEIGHT_CM = 8;
+export const PRODUCT_WEIGHT_GRAMS = 700;
+export const PRODUCT_LENGTH_CM = 14;
+export const PRODUCT_WIDTH_CM = 12;
+export const PRODUCT_HEIGHT_CM = 5;
 
 export interface PackageDimensions {
   weight: number; // grams
