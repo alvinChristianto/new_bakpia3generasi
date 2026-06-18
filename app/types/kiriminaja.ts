@@ -62,28 +62,6 @@ export interface ShippingRate {
   insurance: number;
 }
 
-export interface PricingExpressRequest {
-  origin: number;
-  subdistrict_origin?: number;
-  destination: number;
-  subdistrict_destination?: number;
-  weight: number;
-  length?: number;
-  width?: number;
-  height?: number;
-  item_value?: string | number;
-  insurance?: number;
-  courier?: string[];
-}
-
-export interface PricingExpressResponse {
-  status: boolean;
-  method: string;
-  text: string;
-  details: Record<string, unknown>;
-  results: ShippingRate[];
-}
-
 // ─── Selected Courier (stored in useShipping) ─────────────────────────────────
 
 export interface SelectedCourier {

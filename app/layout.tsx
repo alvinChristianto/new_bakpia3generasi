@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description:
     "Rasakan cita rasa autentik Bakpia 3 Generasi. Produk bakpia premium buatan tangan dengan resep tradisional yang telah dipercaya selama puluhan tahun.",
   keywords: [
-    "bakpia jogja",
+    "bakpia 3 generasi",
     "bakpia istimewa",
     "bakpia premium",
     "makanan tradisional indonesia",

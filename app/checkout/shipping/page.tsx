@@ -16,14 +16,13 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useShipping } from "@/hooks/use-shipping";
 import { useCart } from "@/hooks/use-cart";
-import { calculatePackageDimensions } from "../../..//lib/package-dimensions";
 import {
   getProvinces,
   getCities,
   getDistricts,
   getSubDistricts,
-  getExpressPricing,
 } from "@/lib/kiriminaja";
+import { getShippingPricing } from "@/app/api/endpoints/shipping";
 import type {
   Province,
   City,
@@ -151,8 +150,8 @@ export default function ShippingPage() {
   const { address, setAddress } = useShipping();
   const { cart, subtotal } = useCart();
 
-  // ── package dimensions derived from cart quantities ────────────────────────
-  const packageDimensions = calculatePackageDimensions(cart);
+  // ── total quantity drives package dimensions (computed server-side) ────────
+  const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   // ── pre-populate from existing delivery address in store ───────────────────
   const existingDelivery = address?.type === "delivery" ? address : null;
@@ -236,14 +235,11 @@ export default function ShippingPage() {
     // Auto-trigger pricing if courier was cleared due to quantity change
     if (existingDelivery.courier === null) {
       setLoadingRates(true);
-      getExpressPricing({
-        destination: existingDelivery.kecamatan_id,
-        subdistrict_destination: existingDelivery.kelurahan_id,
-        item_value: String(subtotal),
-        weight: packageDimensions.weight,
-        length: packageDimensions.length,
-        width: packageDimensions.width,
-        height: packageDimensions.height,
+      getShippingPricing({
+        destination_kecamatan_id: existingDelivery.kecamatan_id,
+        destination_kelurahan_id: existingDelivery.kelurahan_id,
+        total_qty: totalQty,
+        item_value: subtotal,
       })
         .then((results) => {
           if (!results || results.length === 0) {
@@ -319,14 +315,11 @@ export default function ShippingPage() {
       setRatesError(null);
       if (!val) return;
       setLoadingRates(true);
-      getExpressPricing({
-        destination: Number(selectedDistrict),
-        subdistrict_destination: Number(val),
-        item_value: String(subtotal),
-        weight: packageDimensions.weight,
-        length: packageDimensions.length,
-        width: packageDimensions.width,
-        height: packageDimensions.height,
+      getShippingPricing({
+        destination_kecamatan_id: Number(selectedDistrict),
+        destination_kelurahan_id: Number(val),
+        total_qty: totalQty,
+        item_value: subtotal,
       })
         .then((results) => {
           if (!results || results.length === 0) {
@@ -341,7 +334,7 @@ export default function ShippingPage() {
         .catch(() => setRatesError("Gagal memuat tarif pengiriman. Coba lagi."))
         .finally(() => setLoadingRates(false));
     },
-    [selectedDistrict, subtotal, packageDimensions],
+    [selectedDistrict, subtotal, totalQty],
   );
 
   // ── name helpers ───────────────────────────────────────────────────────────
