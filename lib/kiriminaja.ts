@@ -3,8 +3,6 @@ import type {
   City,
   District,
   SubDistrict,
-  PricingExpressRequest,
-  ShippingRate,
 } from "../app/types/kiriminaja";
 
 /**
@@ -79,44 +77,6 @@ export async function getSubDistricts(
 }
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
-// POST /api/mitra/v6.1/shipping_price
-// Sandbox:    https://tdev.kiriminaja.com/api/mitra/v6.1/shipping_price
-// Production: https://client.kiriminaja.com/api/mitra/v6.1/shipping_price
-export interface ExpressPricingPayload {
-  destination: number; // kecamatan_id
-  subdistrict_destination: number; // kelurahan_id
-  item_value: string; // total product price as string
-  weight: number; // grams — from calculatePackageDimensions
-  length: number; // cm
-  width: number; // cm
-  height: number; // cm
-}
-
-export async function getExpressPricing(
-  payload: ExpressPricingPayload,
-): Promise<ShippingRate[]> {
-  const body = {
-    // ── hardcoded origin (your warehouse) ──────────────────────────────────
-    origin: 6983,
-    subdistrict_origin: 31409,
-    // ── from user address selection ────────────────────────────────────────
-    destination: payload.destination,
-    subdistrict_destination: payload.subdistrict_destination,
-    // ── from cart dimensions ───────────────────────────────────────────────
-    weight: payload.weight,
-    length: payload.length,
-    width: payload.width,
-    height: payload.height,
-    // ── from cart subtotal ─────────────────────────────────────────────────
-    item_value: payload.item_value,
-    // ── fixed ──────────────────────────────────────────────────────────────
-    insurance: 1,
-    courier: ["jne", "tiki", "spx"],
-  };
-
-  const data = await post<{ status: boolean; results: ShippingRate[] }>(
-    "/v6.1/shipping_price",
-    body,
-  );
-  return data.results;
-}
+// Shipping-price (quote) calculation lives in the Laravel backend
+// (POST /api/shipping/pricing → app/api/endpoints/shipping.ts), so the origin
+// and box dimensions stay server-side as the single source of truth.

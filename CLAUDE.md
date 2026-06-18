@@ -49,7 +49,7 @@ Unit tests live in `app/api/endpoints/*.test.ts` (Vitest). **Also verify changes
 | `components/providers/` | Top-level providers (theme, session, cart). |
 | `hooks/` | `use-cart.ts` (Context wrapper), `use-shipping.ts` (Zustand persist). |
 | `lib/kiriminaja.ts` | Browser-side wrappers that call `/api/kiriminaja/...` (the proxy, not upstream). |
-| `lib/package-dimensions.ts` | Box dimension math for shipping cost calc — boxes stack vertically, so only height scales with quantity. |
+| `app/api/endpoints/shipping.ts` | Shipping-price quote call to Laravel (`POST /api/shipping/pricing`). Dimensions/origin are computed backend-side. |
 | `lib/utils.ts` | `cn()` and other shared helpers. |
 
 ## Backend Communication
@@ -82,9 +82,8 @@ Two independent stores — do not merge them:
 
 ## Shipping (KiriminAja)
 
-- Browser → `/api/kiriminaja/[...path]/route.ts` → upstream `KIRIMINAJA_BASE_URL`. The key is injected server-side.
-- `lib/kiriminaja.ts` calls `getExpressPricing` with a **hardcoded warehouse origin** (`origin: 6983`, `subdistrict_origin: 31409`). If the bakery changes warehouses, update these constants.
-- `lib/package-dimensions.ts` computes weight + dimensions. Boxes stack vertically — only height scales with quantity; width and depth are constant.
+- **Coverage area** (province/city/kecamatan/kelurahan dropdowns): browser → `/api/kiriminaja/[...path]/route.ts` → upstream `KIRIMINAJA_BASE_URL`. The key is injected server-side. `lib/kiriminaja.ts` holds these wrappers.
+- **Shipping-price quote**: calculated by the **Laravel backend**, not the frontend. The shipping page calls `getShippingPricing` (`app/api/endpoints/shipping.ts` → `POST /api/shipping/pricing`) with just `destination_kecamatan_id`, `destination_kelurahan_id`, `total_qty`, and `item_value`. The warehouse origin and box dimensions live in the backend's `config/kiriminaja.php` as the single source of truth — there is no frontend dimension math. If the bakery changes warehouses or box sizes, update that config.
 
 ## UI Conventions
 
