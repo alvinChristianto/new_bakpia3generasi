@@ -16,6 +16,7 @@ import {
   Clock,
   CreditCard,
   Hash,
+  Printer,
 } from "lucide-react";
 import { STATUS_CONFIG } from "@/app/types/order-status";
 
@@ -242,6 +243,26 @@ function OrderDetailColumn({
           </p>
         </div>
       )}
+
+      {/* Shipping label link — paid courier-delivery orders only */}
+      {["paid", "shipping", "completed"].includes(transaction.status) &&
+        transaction.courier_name !== "pickup" && (
+          <div className="bg-muted/40 rounded-lg px-4 py-3">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+              <Printer className="w-3 h-3" />
+              Label Pengiriman
+            </div>
+            <a
+              href={`${process.env.NEXT_PUBLIC_BE_ROUTE}/api/transaction/${transaction.invoice_number}/label`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-muted transition-colors"
+            >
+              <Printer className="w-4 h-4" />
+              Cetak Label
+            </a>
+          </div>
+        )}
 
       {/* Shipping address */}
       {addr && (

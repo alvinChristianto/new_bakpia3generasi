@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import Script from "next/script";
 import { checkoutOrder } from "../api/endpoints/checkout";
-import { getProfile } from "../api/endpoints/profile";
+import { getProfile, updatePhone } from "../api/endpoints/profile";
 
 // ─── Midtrans checkout response shape ─────────────────────────────────────────
 
@@ -95,6 +95,8 @@ export default function CheckoutPage() {
   const [isAddressEditorOpen, setIsAddressEditorOpen] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneSaved, setPhoneSaved] = useState(false);
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.accessToken) return;
@@ -108,6 +110,34 @@ export default function CheckoutPage() {
       setIsFormValid(!!(data.namaPenerima && data.email && data.nomorTelepon));
     }).catch(() => {});
   }, [status, session?.accessToken]);
+
+  // Persist an edited phone number to the customer's profile from checkout.
+  const handleSavePhone = async (phone: string) => {
+    if (!session?.accessToken) return;
+    setPhoneSaved(false);
+    setSavingPhone(true);
+    try {
+      await updatePhone(session.accessToken as string, phone);
+      setCustomerData((prev) =>
+        prev
+          ? { ...prev, nomorTelepon: phone }
+          : { namaPenerima: "", email: "", nomorTelepon: phone },
+      );
+      setIsFormValid(
+        !!(customerData?.namaPenerima && customerData?.email && phone),
+      );
+      setPhoneSaved(true);
+      setTimeout(() => setPhoneSaved(false), 3000);
+    } catch {
+      triggerModal(
+        "Gagal Menyimpan",
+        "Nomor telepon tidak dapat disimpan. Periksa format (+62/08) lalu coba lagi.",
+        "fail",
+      );
+    } finally {
+      setSavingPhone(false);
+    }
+  };
 
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -315,6 +345,11 @@ export default function CheckoutPage() {
                   initialData={customerData || undefined}
                   onValidationChange={setIsFormValid}
                   locked={status === "authenticated"}
+                  onSavePhone={
+                    status === "authenticated" ? handleSavePhone : undefined
+                  }
+                  savingPhone={savingPhone}
+                  phoneSaved={phoneSaved}
                 />
               </div>
 

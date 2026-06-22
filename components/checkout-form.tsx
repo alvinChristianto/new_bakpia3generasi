@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { AlertCircle, Lock } from 'lucide-react'
+import { AlertCircle, Check, Loader2, Lock } from 'lucide-react'
+import { Button } from './ui/button'
 
 export interface CustomerData {
   namaPenerima: string
@@ -15,9 +16,22 @@ interface CheckoutFormProps {
   initialData?: CustomerData
   onValidationChange?: (isValid: boolean) => void
   locked?: boolean
+  /** When provided (locked/authenticated flow), shows a Save button beside the
+   *  phone field that persists the number to the customer's profile. */
+  onSavePhone?: (phone: string) => Promise<void>
+  savingPhone?: boolean
+  phoneSaved?: boolean
 }
 
-export function CheckoutForm({ onDataChange, initialData, onValidationChange, locked = false }: CheckoutFormProps) {
+export function CheckoutForm({
+  onDataChange,
+  initialData,
+  onValidationChange,
+  locked = false,
+  onSavePhone,
+  savingPhone = false,
+  phoneSaved = false,
+}: CheckoutFormProps) {
   const [formData, setFormData] = useState<CustomerData>(
     initialData || {
       namaPenerima: '',
@@ -112,6 +126,27 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange, lo
         : 'bg-background border-border'
     }`
 
+  // Phone stays editable even when the rest of the form is locked, so it gets
+  // its own always-editable styling regardless of `locked`.
+  const phoneInputClass =
+    `w-full px-3 py-2 border rounded-lg text-foreground placeholder-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+      errors.nomorTelepon ? 'bg-background border-destructive' : 'bg-background border-border'
+    }`
+
+  const phoneValid = /^(\+62|08)[0-9]{9,11}$/.test(
+    formData.nomorTelepon.replace(/[-\s]/g, ''),
+  )
+
+  const handleSavePhone = async () => {
+    if (!onSavePhone) return
+    const error = getFieldError('nomorTelepon', formData.nomorTelepon)
+    if (error) {
+      setErrors({ ...errors, nomorTelepon: error })
+      return
+    }
+    await onSavePhone(formData.nomorTelepon)
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -173,27 +208,48 @@ export function CheckoutForm({ onDataChange, initialData, onValidationChange, lo
         <label className="block text-sm font-medium text-foreground mb-2">
           Nomor Telepon *
         </label>
-        <input
-          type="tel"
-          value={formData.nomorTelepon}
-          onChange={(e) => !locked && handleChange('nomorTelepon', e.target.value.replace(/[^\d+\-\s]/g, ''))}
-          disabled={locked}
-          className={inputClass('nomorTelepon')}
-          placeholder="+62812345678 atau 08123456789"
-        />
-        {!locked && errors.nomorTelepon && (
+        <div className="flex gap-2">
+          <input
+            type="tel"
+            value={formData.nomorTelepon}
+            onChange={(e) => handleChange('nomorTelepon', e.target.value.replace(/[^\d+\-\s]/g, ''))}
+            className={`flex-1 ${phoneInputClass}`}
+            placeholder="+62812345678 atau 08123456789"
+          />
+          {onSavePhone && (
+            <Button
+              type="button"
+              onClick={handleSavePhone}
+              disabled={savingPhone || !phoneValid}
+              className="h-auto shrink-0 px-4 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {savingPhone ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Menyimpan
+                </>
+              ) : phoneSaved ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  Tersimpan
+                </>
+              ) : (
+                'Simpan'
+              )}
+            </Button>
+          )}
+        </div>
+        {errors.nomorTelepon && (
           <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{errors.nomorTelepon}</span>
           </div>
         )}
-        {locked && !formData.nomorTelepon && (
+        {onSavePhone && (
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Nomor telepon belum diisi.{' '}
-            <Link href="/dashboard/edit-profile" className="underline hover:text-foreground">
-              Lengkapi di Profil
-            </Link>{' '}
-            sebelum checkout.
+            Nomor telepon dapat diubah di sini, lalu tekan{' '}
+            <span className="font-medium text-foreground">Simpan</span> untuk
+            memperbarui profil Anda.
           </p>
         )}
       </div>
