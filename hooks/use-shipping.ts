@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { AddressData } from "../app/types/address";
 
 interface ShippingState {
@@ -15,31 +14,24 @@ interface ShippingState {
   clearCourier: () => void;
 }
 
-export const useShipping = create<ShippingState>()(
-  persist(
-    (set, get) => ({
-      address: null,
+export const useShipping = create<ShippingState>()((set, get) => ({
+  address: null,
 
-      setAddress: (address: AddressData) => set({ address }),
+  setAddress: (address: AddressData) => set({ address }),
 
-      clearAddress: () => set({ address: null }),
+  clearAddress: () => set({ address: null }),
 
-      clearCourier: () => {
-        const current = get().address;
-        if (!current || current.type !== "delivery") return;
-        set({
-          address: {
-            ...current,
-            courier: null,
-          },
-        });
+  clearCourier: () => {
+    const current = get().address;
+    if (!current || current.type !== "delivery") return;
+    set({
+      address: {
+        ...current,
+        courier: null,
       },
-    }),
-    {
-      name: "shipping-storage",
-    },
-  ),
-);
+    });
+  },
+}));
 
 /** Derive shipping cost from address — use in components, not in the store */
 export function getShippingCost(address: AddressData | null): number {

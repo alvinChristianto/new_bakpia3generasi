@@ -23,7 +23,7 @@ Unit tests live in `app/api/endpoints/*.test.ts` (Vitest). **Also verify changes
 - **Next.js 16** (App Router) with **React 19**
 - **next-auth v5 (beta)** — Google OAuth only
 - **Tailwind CSS v4** + **shadcn/ui** (Radix primitives in `components/ui/`)
-- **Zustand** (persisted) for shipping/address state; **React Context** for cart
+- **Zustand** (in-memory, not persisted) for shipping/address state; **React Context** for cart
 - **axios** for backend calls
 - **react-hook-form** + **zod** for forms and validation
 - **sonner** for toasts; **lucide-react** for icons
@@ -47,7 +47,7 @@ Unit tests live in `app/api/endpoints/*.test.ts` (Vitest). **Also verify changes
 | `components/` | Feature components (`cart-sidebar`, `checkout-form`, `address-editor`, `product-card`, `navbar`, etc.). |
 | `components/ui/` | shadcn primitives — don't hand-roll, install via `npx shadcn@latest add <name>`. |
 | `components/providers/` | Top-level providers (theme, session, cart). |
-| `hooks/` | `use-cart.ts` (Context wrapper), `use-shipping.ts` (Zustand persist). |
+| `hooks/` | `use-cart.ts` (Context wrapper), `use-shipping.ts` (Zustand, in-memory). |
 | `lib/kiriminaja.ts` | Browser-side wrappers that call `/api/kiriminaja/...` (the proxy, not upstream). |
 | `app/api/endpoints/shipping.ts` | Shipping-price quote call to Laravel (`POST /api/shipping/pricing`). Dimensions/origin are computed backend-side. |
 | `lib/utils.ts` | `cn()` and other shared helpers. |
@@ -70,7 +70,7 @@ When the backend adds or changes an endpoint, add/update the matching endpoint m
 Two independent stores — do not merge them:
 
 - **Cart** — `components/cart-provider.tsx` (React Context), persisted to `localStorage` under key `bakpia-cart`. Access via `useCart` in `hooks/use-cart.ts`.
-- **Shipping / Address** — `hooks/use-shipping.ts` (Zustand `persist`), saved to `localStorage` under key `shipping-storage`. Holds an `AddressData` union (`delivery | pickup`). When cart quantity changes, only the courier is cleared — the address is preserved so the user only re-picks a courier.
+- **Shipping / Address** — `hooks/use-shipping.ts` (Zustand, **in-memory only — not persisted**). Holds an `AddressData` union (`delivery | pickup`). Survives client-side navigation within the SPA but resets to default (`address: null`) on a full page refresh, so the customer re-selects shipping after a reload. When cart quantity changes, only the courier is cleared — the address is preserved so the user only re-picks a courier.
 
 ## Checkout Flow (`app/checkout/page.tsx`)
 
