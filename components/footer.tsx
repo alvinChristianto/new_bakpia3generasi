@@ -43,7 +43,10 @@ export function Footer() {
             <h4 className="font-semibold mb-4">Layanan Pelanggan</h4>
             <ul className="space-y-2 text-sm text-background/80">
               <li>
-                <Link href="#" className="hover:text-background transition">
+                <Link
+                  href="https://wa.me/6282138060002?text=Halo%2C%20saya%20ingin%20bertanya%20mengenai%20BAKPIA3GENERASI%3F"
+                  className="hover:text-background transition"
+                >
                   Hubungi Kami
                 </Link>
               </li>
@@ -52,13 +55,16 @@ export function Footer() {
                   Kebijakan Pengiriman
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link href="#" className="hover:text-background transition">
                   Kebijakan Pengembalian
                 </Link>
-              </li>
+              </li> */}
               <li>
-                <Link href="#" className="hover:text-background transition">
+                <Link
+                  href="https://wa.me/6282138060002?text=Halo%2C%20saya%20ingin%20bertanya%20mengenai%20BAKPIA3GENERASI%3F"
+                  className="hover:text-background transition"
+                >
                   FAQ
                 </Link>
               </li>
@@ -70,12 +76,12 @@ export function Footer() {
             <h4 className="font-semibold mb-4">Informasi</h4>
             <ul className="space-y-2 text-sm text-background/80">
               <li>
-                <Link href="#" className="hover:text-background transition">
+                <Link href="/tentang-kami" className="hover:text-background transition">
                   Tentang Kami
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-background transition">
+                <Link href="https://bit.ly/lokercabin" className="hover:text-background transition">
                   Karir
                 </Link>
               </li>

@@ -50,12 +50,7 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:block flex-1 mx-8">
             <div className="flex items-center justify-center gap-8">
-              <Link
-                href="/"
-                className="text-foreground hover:text-primary transition"
-              >
-                Beranda
-              </Link>
+             
               <Link
                 href="/#products"
                 className="text-foreground hover:text-primary transition"
@@ -163,13 +158,7 @@ export function Navbar() {
         {isMenuOpen && (
           <div className="md:hidden pb-4 border-t border-border">
             <div className="flex flex-col gap-2 pt-4">
-              <Link
-                href="/"
-                className="px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Beranda
-              </Link>
+             
               <Link
                 href="/#products"
                 className="px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"

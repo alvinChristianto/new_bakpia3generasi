@@ -1,29 +1,43 @@
-import { Metadata } from 'next'
-import Image from 'next/image'
-import Link from 'next/link'
-import { Navbar } from '@/components/navbar'
-import { Footer } from '@/components/footer'
-import { Button } from '@/components/ui/button'
-import { ArrowRight } from 'lucide-react'
+import { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: 'Tentang Kami - Bakpia 3 Generasi',
-  description: 'Pelajari sejarah dan keunikan Bakpia 3 Generasi. Produk bakpia autentik dengan resep tradisional yang telah dipercaya selama puluhan tahun.',
-  keywords: ['tentang kami', 'bakpia 3 generasi', 'bakpia istimewa', 'sejarah bakpia'],
-  alternates: { canonical: '/tentang-kami' },
+  title: "Tentang Kami - Bakpia 3 Generasi",
+  description:
+    "Pelajari sejarah dan keunikan Bakpia 3 Generasi. Produk bakpia autentik dengan resep tradisional yang telah dipercaya selama puluhan tahun.",
+  keywords: [
+    "tentang kami",
+    "bakpia 3 generasi",
+    "bakpia istimewa",
+    "sejarah bakpia",
+  ],
+  alternates: { canonical: "/tentang-kami" },
   openGraph: {
-    title: 'Tentang Kami - Bakpia 3 Generasi',
-    description: 'Pelajari sejarah dan keunikan Bakpia 3 Generasi. Produk bakpia autentik dengan resep tradisional yang telah dipercaya selama puluhan tahun.',
-    url: '/tentang-kami',
-    images: [{ url: '/bakpia-tentang-kami.jpg', width: 1200, height: 630, alt: 'Tentang Bakpia 3 Generasi' }],
+    title: "Tentang Kami - Bakpia 3 Generasi",
+    description:
+      "Pelajari sejarah dan keunikan Bakpia 3 Generasi. Produk bakpia autentik dengan resep tradisional yang telah dipercaya selama puluhan tahun.",
+    url: "/tentang-kami",
+    images: [
+      {
+        url: "/bakpia-tentang-kami.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Tentang Bakpia 3 Generasi",
+      },
+    ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Tentang Kami - Bakpia 3 Generasi',
-    description: 'Pelajari sejarah dan keunikan Bakpia 3 Generasi.',
-    images: ['/bakpia-tentang-kami.jpg'],
+    card: "summary_large_image",
+    title: "Tentang Kami - Bakpia 3 Generasi",
+    description: "Pelajari sejarah dan keunikan Bakpia 3 Generasi.",
+    images: ["/bakpia-about.webp"],
   },
-}
+};
 
 export default function TentangKamiPage() {
   return (
@@ -37,7 +51,8 @@ export default function TentangKamiPage() {
               Tentang Kami
             </h1>
             <p className="text-lg text-muted-foreground text-balance">
-              Mengenal lebih dekat Bakpia 3 Generasi dan perjalanan kami dalam menjaga keaslian rasa tradisional
+              Mengenal lebih dekat Bakpia 3 Generasi dan perjalanan kami dalam
+              menjaga keaslian rasa tradisional
             </p>
           </div>
 
@@ -46,7 +61,7 @@ export default function TentangKamiPage() {
             {/* Left Column - Image */}
             <div className="relative h-96 md:h-full min-h-96 rounded-lg overflow-hidden shadow-lg">
               <Image
-                src="/bakpia-tentang-kami.jpg"
+                src="/bakpia-about.webp"
                 alt="Proses pembuatan Bakpia 3 Generasi"
                 fill
                 className="object-cover"
@@ -61,10 +76,21 @@ export default function TentangKamiPage() {
                   Warisan Otentik dari Yogyakarta
                 </h2>
                 <p className="text-muted-foreground leading-relaxed mb-4">
-                  Bakpia 3 Generasi adalah hasil dari dedikasi dan keahlian yang telah turun-temurun selama lebih dari lima puluh tahun. Dimulai dari sebuah dapur kecil di jantung kota Yogyakarta, kami berkomitmen untuk menghadirkan bakpia berkualitas tinggi dengan menggunakan bahan-bahan pilihan dan teknik pembuatan tradisional yang telah terbukti kesuksesannya. Setiap produk kami dibuat dengan cermat, memastikan cita rasa autentik yang menggugah selera dan meninggalkan kesan mendalam di setiap gigitan.
+                  Bakpia 3 Generasi menghadirkan cita rasa autentik khas Jogja
+                  yang dibuat dari resep turun-temurun dengan bahan-bahan
+                  premium pilihan. Diproduksi fresh setiap hari, setiap bakpia
+                  memiliki tekstur lembut, isian melimpah, dan rasa yang
+                  konsisten di setiap gigitan. Perpaduan kualitas dan kelezatan
+                  ini menjadikannya pilihan tepat bagi pecinta bakpia premium.
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  Kepercayaan konsumen selama puluhan tahun menjadi bukti nyata dari komitmen kami terhadap kualitas. Kami tidak hanya menjual produk, tetapi juga menjual cerita dan tradisi yang telah menjadi bagian dari warisan budaya Yogyakarta. Dalam setiap kemasan Bakpia 3 Generasi, kami membawa kepercayaan yang diberikan oleh jutaan pelanggan setia kami. Rasakan sendiri cita rasa autentik yang telah memenangkan hati generasi demi generasi, dan jadilah bagian dari perjalanan kami dalam melestarikan kuliner tradisional Indonesia yang sesungguhnya.
+                  Tidak hanya lezat untuk dinikmati sendiri, Bakpia 3 Generasi
+                  juga hadir dengan kemasan premium yang cocok dijadikan
+                  oleh-oleh untuk keluarga, teman, maupun kolega. Setiap
+                  kotaknya membawa cita rasa khas Jogja yang berkesan dan selalu
+                  dirindukan. Jadikan Bakpia 3 Generasi sebagai pilihan
+                  oleh-oleh terbaik yang menghadirkan kualitas, kelezatan, dan
+                  kebanggaan dalam setiap momen.
                 </p>
               </div>
 
@@ -86,12 +112,29 @@ export default function TentangKamiPage() {
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
               {[
-                { title: 'Keaslian', description: 'Menggunakan resep dan bahan asli yang telah terbukti kualitasnya' },
-                { title: 'Tradisi', description: 'Menjaga metode pembuatan tradisional yang telah teruji waktu' },
-                { title: 'Kepercayaan', description: 'Komitmen pada kepuasan pelanggan adalah prioritas utama kami' },
+                {
+                  title: "Otentik",
+                  description:
+                    "Dibuat dengan resep turun-temurun menggunakan bahan pilihan, menghadirkan bakpia autentik khas Jogja dengan rasa yang lembut, legit, dan selalu bikin kangen",
+                },
+                {
+                  title: "Fresh Setiap Hari",
+                  description:
+                    "Diproduksi secara fresh dengan kualitas yang terjaga, sehingga setiap gigitan memberikan pengalaman menikmati bakpia premium",
+                },
+                {
+                  title: "Bakpia Premium",
+                  description:
+                    "Bakpia premium dengan bahan-bahan berkualitas tinggi, menghadirkan pengalaman menikmati bakpia yang luar biasa",
+                },
               ].map((value, index) => (
-                <div key={index} className="bg-card border border-border rounded-lg p-6">
-                  <h3 className="text-xl font-bold text-foreground mb-3">{value.title}</h3>
+                <div
+                  key={index}
+                  className="bg-card border border-border rounded-lg p-6"
+                >
+                  <h3 className="text-xl font-bold text-foreground mb-3">
+                    {value.title}
+                  </h3>
                   <p className="text-muted-foreground">{value.description}</p>
                 </div>
               ))}
@@ -101,5 +144,5 @@ export default function TentangKamiPage() {
       </main>
       <Footer />
     </>
-  )
+  );
 }
