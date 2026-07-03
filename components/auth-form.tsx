@@ -45,7 +45,7 @@ const getnameError = (value: string): string => {
   return ''
 }
 
-const getEmailError = (value: string): string => {
+export const getEmailError = (value: string): string => {
   if (!value.trim()) {
     return 'Email harus diisi'
   }
@@ -66,7 +66,7 @@ const getPhoneError = (value: string): string => {
   return ''
 }
 
-const getPasswordError = (value: string): string => {
+export const getPasswordError = (value: string): string => {
   if (!value.trim()) {
     return 'Password harus diisi'
   }

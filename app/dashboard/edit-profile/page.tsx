@@ -4,11 +4,17 @@ import React, { useState, useEffect } from "react";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { VerifyEmailBanner } from "@/components/verify-email-banner";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Lock, Phone, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { User, Mail, Lock, Phone, Eye, EyeOff, AlertCircle, CheckCircle2, Link2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { getProfile, updateProfile } from "@/app/api/endpoints/profile";
+import {
+  getLinkedAccounts,
+  setPassword as setAccountPassword,
+  unlinkProvider,
+} from "@/app/api/endpoints/linked-accounts";
 
 interface PasswordData {
   currentPassword: string;
@@ -42,6 +48,15 @@ const EditProfilePage = () => {
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // Linked accounts ("Akun Tertaut") state
+  const [linkedLoading, setLinkedLoading] = useState(true);
+  const [hasPassword, setHasPassword] = useState(false);
+  const [providers, setProviders] = useState<string[]>([]);
+  const [linkedError, setLinkedError] = useState("");
+  const [linkedSuccess, setLinkedSuccess] = useState("");
+  const [setPwData, setSetPwData] = useState({ newPassword: "", confirmPassword: "" });
+  const [setPwLoading, setSetPwLoading] = useState(false);
+
   // Load name from backend profile (source of truth — session JWT is stale after updates)
   useEffect(() => {
     const token = (session as any)?.accessToken;
@@ -50,6 +65,20 @@ const EditProfilePage = () => {
       setName(profile.name ?? "");
       setPhone(profile.phone_number ?? "");
     }).catch(() => {});
+  }, [(session as any)?.accessToken]);
+
+  // Load linked login methods (Google + whether a password is set)
+  useEffect(() => {
+    const token = (session as any)?.accessToken;
+    if (!token) return;
+    setLinkedLoading(true);
+    getLinkedAccounts(token)
+      .then((d) => {
+        setHasPassword(d.has_password);
+        setProviders(d.providers);
+      })
+      .catch(() => {})
+      .finally(() => setLinkedLoading(false));
   }, [(session as any)?.accessToken]);
 
   // ── Profile validation ──────────────────────────────────────────────
@@ -136,6 +165,65 @@ const EditProfilePage = () => {
     }
   };
 
+  // ── Linked accounts handlers ────────────────────────────────────────
+  const refreshLinked = async () => {
+    const token = (session as any)?.accessToken;
+    if (!token) return;
+    try {
+      const d = await getLinkedAccounts(token);
+      setHasPassword(d.has_password);
+      setProviders(d.providers);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLinkedError("");
+    setLinkedSuccess("");
+    if (setPwData.newPassword.length < 8) {
+      setLinkedError("Password minimal 8 karakter");
+      return;
+    }
+    if (setPwData.newPassword !== setPwData.confirmPassword) {
+      setLinkedError("Konfirmasi password tidak cocok");
+      return;
+    }
+    setSetPwLoading(true);
+    try {
+      const token = (session as any)?.accessToken;
+      await setAccountPassword(token, {
+        new_password: setPwData.newPassword,
+        new_password_confirmation: setPwData.confirmPassword,
+      });
+      setLinkedSuccess("Password berhasil disetel. Kini Anda bisa masuk dengan email & password.");
+      setSetPwData({ newPassword: "", confirmPassword: "" });
+      await refreshLinked();
+    } catch (err: any) {
+      setLinkedError(err?.response?.data?.message || "Gagal menyetel password");
+    } finally {
+      setSetPwLoading(false);
+    }
+  };
+
+  const handleUnlink = async (provider: string) => {
+    setLinkedError("");
+    setLinkedSuccess("");
+    try {
+      const token = (session as any)?.accessToken;
+      await unlinkProvider(token, provider);
+      setLinkedSuccess("Metode login berhasil dilepas.");
+      await refreshLinked();
+    } catch (err: any) {
+      setLinkedError(err?.response?.data?.message || "Gagal melepas metode login");
+    }
+  };
+
+  const handleConnectGoogle = () => {
+    signIn("google", { callbackUrl: "/dashboard/edit-profile" });
+  };
+
   return (
     <>
       <Navbar />
@@ -144,6 +232,8 @@ const EditProfilePage = () => {
 
         <main className="flex-1 pt-20 md:pt-4">
           <div className="max-w-2xl mx-auto p-4 md:p-6">
+            <VerifyEmailBanner />
+
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
@@ -156,7 +246,7 @@ const EditProfilePage = () => {
             </div>
 
             <Tabs defaultValue="profile" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 bg-muted">
+              <TabsList className="grid w-full grid-cols-3 bg-muted">
                 <TabsTrigger
                   value="profile"
                   className="data-[state=active]:bg-card"
@@ -168,6 +258,12 @@ const EditProfilePage = () => {
                   className="data-[state=active]:bg-card"
                 >
                   Password
+                </TabsTrigger>
+                <TabsTrigger
+                  value="linked"
+                  className="data-[state=active]:bg-card"
+                >
+                  Akun Tertaut
                 </TabsTrigger>
               </TabsList>
 
@@ -439,6 +535,136 @@ const EditProfilePage = () => {
                     {passwordLoading ? "Memproses..." : "Ubah Password"}
                   </Button>
                 </form>
+              </TabsContent>
+
+              {/* ── Linked Accounts Tab ──────────────────────────────── */}
+              <TabsContent value="linked" className="space-y-6">
+                <div className="bg-card border border-border rounded-lg p-6 space-y-6">
+                  {linkedSuccess && (
+                    <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                      <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                      {linkedSuccess}
+                    </div>
+                  )}
+                  {linkedError && (
+                    <div className="flex items-center gap-2 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      {linkedError}
+                    </div>
+                  )}
+
+                  {linkedLoading ? (
+                    <div className="space-y-3">
+                      <div className="bg-muted rounded-lg h-20 w-full animate-pulse" />
+                      <div className="bg-muted rounded-lg h-20 w-full animate-pulse" />
+                    </div>
+                  ) : (
+                    <>
+                      {/* Google */}
+                      <div className="flex items-center justify-between gap-4 p-4 border border-border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Link2 className="w-5 h-5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-foreground">Google</p>
+                            <p className="text-sm text-muted-foreground">
+                              {providers.includes("google")
+                                ? "Tersambung"
+                                : "Belum tersambung"}
+                            </p>
+                          </div>
+                        </div>
+                        {providers.includes("google") ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleUnlink("google")}
+                            className="border-border bg-transparent hover:bg-destructive/10 text-destructive"
+                          >
+                            Lepas
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={handleConnectGoogle}
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                          >
+                            Hubungkan
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Email & Password method */}
+                      <div className="p-4 border border-border rounded-lg">
+                        <div className="flex items-center gap-3 mb-1">
+                          <Lock className="w-5 h-5 text-muted-foreground" />
+                          <p className="font-medium text-foreground">
+                            Email &amp; Password
+                          </p>
+                        </div>
+                        {hasPassword ? (
+                          <p className="text-sm text-muted-foreground ml-8">
+                            Sudah disetel. Ubah lewat tab{" "}
+                            <span className="font-medium text-foreground">
+                              Password
+                            </span>
+                            .
+                          </p>
+                        ) : (
+                          <>
+                            <p className="text-sm text-muted-foreground ml-8 mb-4">
+                              Belum disetel. Setel password agar bisa masuk dengan
+                              email tanpa Google.
+                            </p>
+                            <form
+                              onSubmit={handleSetPassword}
+                              className="space-y-4"
+                            >
+                              <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">
+                                  Password Baru *
+                                </label>
+                                <input
+                                  type="password"
+                                  value={setPwData.newPassword}
+                                  onChange={(e) =>
+                                    setSetPwData({
+                                      ...setPwData,
+                                      newPassword: e.target.value,
+                                    })
+                                  }
+                                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                  placeholder="Minimal 8 karakter"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-foreground mb-2">
+                                  Konfirmasi Password *
+                                </label>
+                                <input
+                                  type="password"
+                                  value={setPwData.confirmPassword}
+                                  onChange={(e) =>
+                                    setSetPwData({
+                                      ...setPwData,
+                                      confirmPassword: e.target.value,
+                                    })
+                                  }
+                                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                  placeholder="Ulangi password baru"
+                                />
+                              </div>
+                              <Button
+                                type="submit"
+                                disabled={setPwLoading}
+                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                              >
+                                {setPwLoading ? "Memproses..." : "Setel Password"}
+                              </Button>
+                            </form>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </TabsContent>
             </Tabs>
           </div>

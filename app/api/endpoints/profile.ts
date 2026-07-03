@@ -4,6 +4,9 @@ export interface Profile {
   name: string;
   email: string;
   phone_number: string | null;
+  avatar_url?: string | null;
+  email_verified_at?: string | null;
+  has_password?: boolean;
   created_at?: string;
 }
 

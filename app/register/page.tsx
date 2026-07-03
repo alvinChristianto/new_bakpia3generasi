@@ -10,11 +10,11 @@ export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [googleConflict, setGoogleConflict] = useState(false);
+  const [accountExists, setAccountExists] = useState(false);
 
   const handleRegister = async (data: RegisterData) => {
     setError(null);
-    setGoogleConflict(false);
+    setAccountExists(false);
     setIsLoading(true);
     try {
       const res = await fetch(
@@ -37,8 +37,9 @@ export default function RegisterPage() {
       const result = await res.json();
 
       if (!res.ok) {
-        if (result.error_code === "google_account_exists") {
-          setGoogleConflict(true);
+        if (result.error_code === "account_exists") {
+          setAccountExists(true);
+          return;
         }
         throw new Error(result.message || "Pendaftaran gagal");
       }
@@ -86,12 +87,19 @@ export default function RegisterPage() {
               Daftar Akun
             </h2>
 
-            {googleConflict ? (
+            {accountExists ? (
               <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-                <p className="font-medium mb-1">Email sudah terdaftar via Google</p>
+                <p className="font-medium mb-1">Email sudah terdaftar</p>
                 <p className="mb-3">
-                  Akun dengan email ini sudah dibuat menggunakan Google. Silakan
-                  masuk dengan Google.
+                  Akun dengan email ini sudah ada. Masuk dengan Google, atau setel
+                  password lewat tautan{" "}
+                  <a
+                    href="/forgot-password"
+                    className="font-medium underline hover:text-amber-900"
+                  >
+                    Lupa password
+                  </a>
+                  .
                 </p>
                 <button
                   type="button"

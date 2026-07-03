@@ -21,7 +21,7 @@ Unit tests live in `app/api/endpoints/*.test.ts` (Vitest). **Also verify changes
 ## Stack
 
 - **Next.js 16** (App Router) with **React 19**
-- **next-auth v5 (beta)** — Google OAuth only
+- **next-auth v5 (beta)** — Google OAuth **and** email/password (Credentials); unified per email
 - **Tailwind CSS v4** + **shadcn/ui** (Radix primitives in `components/ui/`)
 - **Zustand** (in-memory, not persisted) for shipping/address state; **React Context** for cart
 - **axios** for backend calls
@@ -60,9 +60,11 @@ When the backend adds or changes an endpoint, add/update the matching endpoint m
 
 ## Authentication
 
-- **next-auth v5 (beta)** with Google OAuth as the only provider.
-- On successful Google sign-in, `auth.ts` POSTs the OAuth identity to Laravel `POST /api/auth/google/callback`. Laravel returns a Sanctum `access_token`, which is stored in the JWT and surfaced on the session as `session.accessToken`.
-- Attach the token as `Authorization: Bearer ${session.accessToken}` when calling protected endpoints (`/api/profile`, `/api/orderlists`, `/api/logout`).
+- **next-auth v5 (beta)** with **two providers**: Google OAuth and email/password (Credentials in `auth.ts`). Both resolve to one identity per email.
+- Google sign-in: `auth.ts` POSTs the OAuth identity to Laravel `POST /api/auth/google/callback`. Email/password: the Credentials `authorize` POSTs to `POST /api/login`; on failure it throws a `CredentialsSignin` subclass carrying the backend `error_code` (e.g. `oauth_only`), read as `loginResult.code` on `/login`. Laravel returns a Sanctum `access_token`, stored in the JWT and surfaced as `session.accessToken`.
+- Attach the token as `Authorization: Bearer ${session.accessToken}` when calling protected endpoints (`/api/profile`, `/api/orderlists`, `/api/logout`, `/api/profile/linked-accounts`, …).
+- Auth surfaces: `app/forgot-password`, `app/reset-password` (also set-password for Google-only), `app/verify-email`, the "Akun Tertaut" tab in `app/dashboard/edit-profile`, and `components/verify-email-banner.tsx`. Endpoint modules: `app/api/endpoints/{password-reset,email-verification,linked-accounts}.ts`.
+- Email verification is **informational only** (banner + resend) — it does **not** block checkout.
 - Route protection for `/dashboard/**` is in `middleware.ts`.
 
 ## State Management

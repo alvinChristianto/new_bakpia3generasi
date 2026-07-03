@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LoginForm, type LoginData } from "@/components/auth-form";
 import { Navbar } from "@/components/navbar";
@@ -21,7 +22,14 @@ export default function LoginPage() {
         password: data.password,
       });
       if (loginResult?.error) {
-        setError("Email atau password salah.");
+        // A passwordless (Google-only) account must not be told "wrong password".
+        if (loginResult.code === "oauth_only") {
+          setError(
+            'Akun ini masuk lewat Google. Lanjutkan dengan tombol "Masuk dengan Google" di bawah, atau setel password lewat "Lupa password?".',
+          );
+        } else {
+          setError("Email atau password salah.");
+        }
       } else {
         router.push("/dashboard");
       }
@@ -68,9 +76,12 @@ export default function LoginPage() {
 
             {/* Forgot Password Link */}
             <div className="text-center mt-4">
-              <a href="#" className="text-sm text-primary hover:underline">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
                 Lupa password?
-              </a>
+              </Link>
             </div>
 
             {/* Or Divider */}

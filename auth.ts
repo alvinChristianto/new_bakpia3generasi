@@ -1,6 +1,14 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
+
+/** Carries the backend's error_code (e.g. "oauth_only") out to the login page. */
+class LoginError extends CredentialsSignin {
+  constructor(code: string) {
+    super();
+    this.code = code;
+  }
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -20,7 +28,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           typeof credentials?.password === "string"
             ? credentials.password
             : "";
-        if (!email || !password) return null;
+        if (!email || !password) throw new LoginError("invalid_credentials");
 
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BE_ROUTE}/api/login`,
@@ -34,9 +42,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           },
         );
 
-        if (!res.ok) return null;
+        if (!res.ok) {
+          // Surface the backend's error_code so the login page can distinguish
+          // a passwordless (Google-only) account from a wrong password.
+          let code = "invalid_credentials";
+          try {
+            const body = await res.json();
+            if (body?.error_code) code = body.error_code;
+          } catch {
+            // ignore parse errors, fall back to generic code
+          }
+          throw new LoginError(code);
+        }
+
         const data = await res.json();
-        if (!data?.access_token || !data?.user) return null;
+        if (!data?.access_token || !data?.user) {
+          throw new LoginError("invalid_credentials");
+        }
 
         return {
           id: data.user.id,
@@ -47,7 +69,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  // TAMBAHKAN INI
   pages: {
     signIn: "/login", // Jika terjadi error atau butuh login, lari ke sini
     error: "/login", // Halaman untuk menampilkan error auth
@@ -66,6 +87,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 email: user.email,
                 name: user.name,
                 google_id: user.id,
+                avatar: user.image,
               }),
             },
           );
@@ -73,8 +95,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (!response.ok) return false;
 
           const data = await response.json();
-          // 2. Tempelkan token dari Laravel ke objek user agar bisa diambil di callback JWT
+          // 2. Tempelkan token + flag ke objek user agar bisa diambil di callback JWT
           user.accessToken = data.access_token;
+          user.needsPhone = data.needs_phone;
           return true;
         } catch (error) {
           console.error("Laravel Auth Error:", error);
@@ -87,16 +110,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       // Masukkan accessToken ke dalam JWT layer
       if (user) {
-        token.accessToken = (user as any).accessToken;
+        const u = user as { accessToken?: string; needsPhone?: boolean };
+        const t = token as { accessToken?: string; needsPhone?: boolean };
+        t.accessToken = u.accessToken;
+        if (u.needsPhone !== undefined) {
+          t.needsPhone = u.needsPhone;
+        }
       }
       return token;
     },
 
     async session({ session, token }) {
       // Masukkan accessToken ke dalam Session agar bisa diakses di Client Side (useSession)
-      if (token.accessToken) {
-        (session as any).accessToken = token.accessToken;
+      const t = token as { accessToken?: string; needsPhone?: boolean };
+      if (t.accessToken) {
+        session.accessToken = t.accessToken;
       }
+      session.needsPhone = t.needsPhone;
       return session;
     },
   },
