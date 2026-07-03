@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -97,6 +97,14 @@ export default function CheckoutPage() {
   const [isFormValid, setIsFormValid] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
   const [phoneSaved, setPhoneSaved] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Guest one-click sign-in/register. Returns to /checkout, where the existing
+  // authenticated effect prefills + locks the form from the customer's profile.
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    await signIn("google", { callbackUrl: "/checkout" });
+  };
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.accessToken) return;
@@ -340,6 +348,45 @@ export default function CheckoutPage() {
             <div className="lg:col-span-2 space-y-6">
               {/* Customer form */}
               <div className="bg-card border border-border rounded-lg p-6">
+                {/* Guest shortcut: sign in / register with Google to auto-fill */}
+                {status === "unauthenticated" && (
+                  <div className="mb-6">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Punya akun? Masuk dengan Google untuk mengisi data secara
+                      otomatis.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleGoogleSignIn}
+                      disabled={googleLoading}
+                      className="w-full px-4 py-2 border border-border bg-transparent rounded-lg text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {googleLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Memproses...
+                        </>
+                      ) : (
+                        "Masuk / Daftar dengan Google"
+                      )}
+                    </button>
+                    {address && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Anda akan memilih ulang pengiriman setelah masuk.
+                      </p>
+                    )}
+                    <div className="relative my-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-border" />
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-card text-muted-foreground">
+                          atau isi data secara manual
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <CheckoutForm
                   onDataChange={setCustomerData}
                   initialData={customerData || undefined}
