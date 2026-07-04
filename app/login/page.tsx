@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LoginForm, type LoginData } from "@/components/auth-form";
 import { Navbar } from "@/components/navbar";
+import { GoogleIcon } from "@/components/icons/google-icon";
 import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
@@ -21,7 +23,14 @@ export default function LoginPage() {
         password: data.password,
       });
       if (loginResult?.error) {
-        setError("Email atau password salah.");
+        // A passwordless (Google-only) account must not be told "wrong password".
+        if (loginResult.code === "oauth_only") {
+          setError(
+            'Akun ini masuk lewat Google. Lanjutkan dengan tombol "Masuk dengan Google" di bawah, atau setel password lewat "Lupa password?".',
+          );
+        } else {
+          setError("Email atau password salah.");
+        }
       } else {
         router.push("/dashboard");
       }
@@ -33,10 +42,16 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
+    setError(null);
     setIsLoading(true);
-    // callbackUrl diarahkan ke dashboard setelah semua proses (termasuk Laravel) selesai
-    await signIn("google", { callbackUrl: "/dashboard" });
-    setIsLoading(false);
+    try {
+      // callbackUrl diarahkan ke dashboard setelah semua proses (termasuk Laravel) selesai
+      await signIn("google", { callbackUrl: "/dashboard" });
+    } catch (err: any) {
+      setError(err?.message || "Login Google gagal");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -68,9 +83,12 @@ export default function LoginPage() {
 
             {/* Forgot Password Link */}
             <div className="text-center mt-4">
-              <a href="#" className="text-sm text-primary hover:underline">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
                 Lupa password?
-              </a>
+              </Link>
             </div>
 
             {/* Or Divider */}
@@ -88,9 +106,16 @@ export default function LoginPage() {
             <button
               onClick={handleGoogleLogin}
               disabled={isLoading}
-              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50"
+              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isLoading ? "Memproses..." : "Masuk dengan Google"}
+              {isLoading ? (
+                "Memproses..."
+              ) : (
+                <>
+                  <GoogleIcon className="w-4 h-4" />
+                  Masuk dengan Google
+                </>
+              )}
             </button>
           </div>
 
