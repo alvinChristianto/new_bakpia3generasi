@@ -16,6 +16,7 @@ import {
 } from "@/hooks/use-shipping";
 import { CheckoutForm, type CustomerData } from "@/components/checkout-form";
 import { AddressEditor } from "@/components/address-editor";
+import { GoogleIcon } from "@/components/icons/google-icon";
 import { ApiResponse } from "../api/types";
 import {
   Dialog,
@@ -103,7 +104,13 @@ export default function CheckoutPage() {
   // authenticated effect prefills + locks the form from the customer's profile.
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl: "/checkout" });
+    try {
+      await signIn("google", { callbackUrl: "/checkout" });
+    } catch (err) {
+      console.error("Login Google gagal", err);
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -367,7 +374,10 @@ export default function CheckoutPage() {
                           Memproses...
                         </>
                       ) : (
-                        "Masuk / Daftar dengan Google"
+                        <>
+                          <GoogleIcon className="w-4 h-4" />
+                          Masuk / Daftar dengan Google
+                        </>
                       )}
                     </button>
                     {address && (

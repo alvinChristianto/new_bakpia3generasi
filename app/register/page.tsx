@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RegisterForm, type RegisterData } from "@/components/auth-form";
 import { Navbar } from "@/components/navbar";
+import { GoogleIcon } from "@/components/icons/google-icon";
 import { signIn } from "next-auth/react"; // Pastikan import ini ada
 
 export default function RegisterPage() {
@@ -63,9 +64,15 @@ export default function RegisterPage() {
   };
 
   const handleGoogleAuth = async () => {
+    setError(null);
     setIsLoading(true);
-    await signIn("google", { callbackUrl: "/dashboard" });
-    setIsLoading(false);
+    try {
+      await signIn("google", { callbackUrl: "/dashboard" });
+    } catch (err: any) {
+      setError(err.message || "Login Google gagal");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -105,9 +112,16 @@ export default function RegisterPage() {
                   type="button"
                   onClick={handleGoogleAuth}
                   disabled={isLoading}
-                  className="w-full px-4 py-2 border border-amber-300 rounded-lg text-sm font-medium bg-background hover:bg-muted transition disabled:opacity-50"
+                  className="w-full px-4 py-2 border border-amber-300 rounded-lg text-sm font-medium bg-background hover:bg-muted transition disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isLoading ? "Memproses..." : "Masuk dengan Google"}
+                  {isLoading ? (
+                    "Memproses..."
+                  ) : (
+                    <>
+                      <GoogleIcon className="w-4 h-4" />
+                      Masuk dengan Google
+                    </>
+                  )}
                 </button>
               </div>
             ) : (
@@ -135,9 +149,16 @@ export default function RegisterPage() {
               type="button"
               onClick={handleGoogleAuth}
               disabled={isLoading}
-              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50"
+              className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isLoading ? "Memproses..." : "Daftar dengan Google"}
+              {isLoading ? (
+                "Memproses..."
+              ) : (
+                <>
+                  <GoogleIcon className="w-4 h-4" />
+                  Daftar dengan Google
+                </>
+              )}
             </button>
           </div>
 

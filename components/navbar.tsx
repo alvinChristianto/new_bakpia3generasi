@@ -31,8 +31,13 @@ export function Navbar() {
       }
     } catch (error) {
       console.error("Gagal revoke token di Laravel", error);
-    } finally {
-      signOut({ callbackUrl: "/" });
+    }
+
+    try {
+      await signOut({ callbackUrl: "/" });
+    } catch (error) {
+      console.error("Gagal signOut", error);
+      setIsLoggingOut(false);
     }
   };
 
