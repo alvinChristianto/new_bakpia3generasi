@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AlertCircle, Check, Loader2, Lock } from 'lucide-react'
 import { Button } from './ui/button'
+import { getPhoneError, isPhoneValid } from '@/lib/phone-validation'
 
 export interface CustomerData {
   namaPenerima: string
@@ -21,6 +22,9 @@ interface CheckoutFormProps {
   onSavePhone?: (phone: string) => Promise<void>
   savingPhone?: boolean
   phoneSaved?: boolean
+  /** Bumped by the parent whenever the user attempts to submit with invalid or
+   *  incomplete data, so all field errors become visible even if untouched. */
+  validationAttempt?: number
 }
 
 export function CheckoutForm({
@@ -31,6 +35,7 @@ export function CheckoutForm({
   onSavePhone,
   savingPhone = false,
   phoneSaved = false,
+  validationAttempt = 0,
 }: CheckoutFormProps) {
   const [formData, setFormData] = useState<CustomerData>(
     initialData || {
@@ -39,13 +44,26 @@ export function CheckoutForm({
       nomorTelepon: '',
     }
   )
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const isFirstValidationAttempt = useRef(true)
 
   useEffect(() => {
     if (!locked || !initialData) return
     setFormData(initialData)
     onDataChange(initialData)
   }, [locked, initialData, onDataChange])
+
+  useEffect(() => {
+    if (isFirstValidationAttempt.current) {
+      isFirstValidationAttempt.current = false
+      return
+    }
+    setTouched({ namaPenerima: true, email: true, nomorTelepon: true })
+  }, [validationAttempt])
+
+  const handleBlur = (field: keyof CustomerData) => {
+    setTouched((prev) => ({ ...prev, [field]: true }))
+  }
 
   const getFieldError = (field: keyof CustomerData, value: string): string => {
     if (field === 'namaPenerima') {
@@ -72,14 +90,7 @@ export function CheckoutForm({
       }
     }
     if (field === 'nomorTelepon') {
-      if (!value.trim()) {
-        return 'Nomor telepon harus diisi'
-      }
-      // Phone validation: must start with +62 or 08
-      const phoneClean = value.replace(/[-\s]/g, '')
-      if (!/^(\+62|08)[0-9]{9,11}$/.test(phoneClean)) {
-        return 'Nomor telepon tidak valid (harus dimulai dengan +62 atau 08)'
-      }
+      return getPhoneError(value)
     }
     return ''
   }
@@ -87,30 +98,20 @@ export function CheckoutForm({
   const handleChange = (field: keyof CustomerData, value: string) => {
     const updatedData = { ...formData, [field]: value }
     setFormData(updatedData)
-    
-    // Clear error for this field when user starts typing
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: '' })
-    }
-
-    // Validate on change
-    const isValid = getFieldError(field, value)
-    if (isValid) {
-      onDataChange(updatedData)
-    }
+    onDataChange(updatedData)
 
     // Check overall form validity
-    const updatedFormValid = field === 'namaPenerima' 
+    const updatedFormValid = field === 'namaPenerima'
       ? value.trim().length >= 3 &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
-        /^(\+62|0)[0-9]{9,12}$/.test(formData.nomorTelepon.replace(/[-\s]/g, ''))
+        isPhoneValid(formData.nomorTelepon)
       : field === 'email'
       ? formData.namaPenerima.trim().length >= 3 &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) &&
-        /^(\+62|0)[0-9]{9,12}$/.test(formData.nomorTelepon.replace(/[-\s]/g, ''))
+        isPhoneValid(formData.nomorTelepon)
       : formData.namaPenerima.trim().length >= 3 &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
-        /^(\+62|0)[0-9]{9,12}$/.test(value.replace(/[-\s]/g, ''))
+        isPhoneValid(value)
 
     if (onValidationChange) {
       onValidationChange(updatedFormValid)
@@ -121,7 +122,7 @@ export function CheckoutForm({
     `w-full px-3 py-2 border rounded-lg text-foreground placeholder-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/50 ${
       locked
         ? 'bg-muted border-border cursor-not-allowed opacity-70'
-        : errors[field]
+        : touched[field] && getFieldError(field, formData[field])
         ? 'bg-background border-destructive'
         : 'bg-background border-border'
     }`
@@ -130,18 +131,18 @@ export function CheckoutForm({
   // its own always-editable styling regardless of `locked`.
   const phoneInputClass =
     `w-full px-3 py-2 border rounded-lg text-foreground placeholder-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-      errors.nomorTelepon ? 'bg-background border-destructive' : 'bg-background border-border'
+      touched.nomorTelepon && getFieldError('nomorTelepon', formData.nomorTelepon)
+        ? 'bg-background border-destructive'
+        : 'bg-background border-border'
     }`
 
-  const phoneValid = /^(\+62|08)[0-9]{9,11}$/.test(
-    formData.nomorTelepon.replace(/[-\s]/g, ''),
-  )
+  const phoneValid = isPhoneValid(formData.nomorTelepon)
 
   const handleSavePhone = async () => {
     if (!onSavePhone) return
     const error = getFieldError('nomorTelepon', formData.nomorTelepon)
     if (error) {
-      setErrors({ ...errors, nomorTelepon: error })
+      setTouched((prev) => ({ ...prev, nomorTelepon: true }))
       return
     }
     await onSavePhone(formData.nomorTelepon)
@@ -172,14 +173,15 @@ export function CheckoutForm({
           type="text"
           value={formData.namaPenerima}
           onChange={(e) => !locked && handleChange('namaPenerima', e.target.value)}
+          onBlur={() => handleBlur('namaPenerima')}
           disabled={locked}
           className={inputClass('namaPenerima')}
           placeholder="Masukkan nama penerima lengkap (minimal 3 huruf)"
         />
-        {!locked && errors.namaPenerima && (
-          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+        {!locked && touched.namaPenerima && getFieldError('namaPenerima', formData.namaPenerima) && (
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errors.namaPenerima}</span>
+            <span>{getFieldError('namaPenerima', formData.namaPenerima)}</span>
           </div>
         )}
       </div>
@@ -192,14 +194,15 @@ export function CheckoutForm({
           type="email"
           value={formData.email}
           onChange={(e) => !locked && handleChange('email', e.target.value)}
+          onBlur={() => handleBlur('email')}
           disabled={locked}
           className={inputClass('email')}
           placeholder="nama@email.com"
         />
-        {!locked && errors.email && (
-          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+        {!locked && touched.email && getFieldError('email', formData.email) && (
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errors.email}</span>
+            <span>{getFieldError('email', formData.email)}</span>
           </div>
         )}
       </div>
@@ -213,6 +216,7 @@ export function CheckoutForm({
             type="tel"
             value={formData.nomorTelepon}
             onChange={(e) => handleChange('nomorTelepon', e.target.value.replace(/[^\d+\-\s]/g, ''))}
+            onBlur={() => handleBlur('nomorTelepon')}
             className={`flex-1 ${phoneInputClass}`}
             placeholder="+62812345678 atau 08123456789"
           />
@@ -239,10 +243,10 @@ export function CheckoutForm({
             </Button>
           )}
         </div>
-        {errors.nomorTelepon && (
-          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+        {touched.nomorTelepon && getFieldError('nomorTelepon', formData.nomorTelepon) && (
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errors.nomorTelepon}</span>
+            <span>{getFieldError('nomorTelepon', formData.nomorTelepon)}</span>
           </div>
         )}
         {onSavePhone && (

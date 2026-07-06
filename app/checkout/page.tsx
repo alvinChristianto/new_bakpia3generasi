@@ -96,6 +96,7 @@ export default function CheckoutPage() {
   const [isAddressEditorOpen, setIsAddressEditorOpen] = useState(false);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [validationAttempt, setValidationAttempt] = useState(0);
   const [savingPhone, setSavingPhone] = useState(false);
   const [phoneSaved, setPhoneSaved] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -257,22 +258,24 @@ export default function CheckoutPage() {
   const handleCompleteOrder = async () => {
     
     if (!customerData?.namaPenerima || !customerData?.email || !customerData?.nomorTelepon) {
+      setValidationAttempt((v) => v + 1);
       triggerModal(
         "Data Penerima Belum Lengkap",
         "Silakan lengkapi nama, email, dan nomor telepon penerima terlebih dahulu.",
         "warning",
       );
-      
+
     console.log("test");
       return;
     }
     if (!isFormValid) {
+      setValidationAttempt((v) => v + 1);
       triggerModal(
         "Data Penerima Tidak Valid",
         "Periksa kembali nama, email, atau nomor telepon yang Anda masukkan.",
         "warning",
       );
-      
+
     console.log("test");
       return;
     }
@@ -407,6 +410,7 @@ export default function CheckoutPage() {
                   }
                   savingPhone={savingPhone}
                   phoneSaved={phoneSaved}
+                  validationAttempt={validationAttempt}
                 />
               </div>
 

@@ -6,6 +6,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { getPhoneError } from '@/lib/phone-validation'
 
 export interface RegisterData {
   name: string
@@ -51,17 +52,6 @@ export const getEmailError = (value: string): string => {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
     return 'Format email tidak valid (contoh: nama@email.com)'
-  }
-  return ''
-}
-
-const getPhoneError = (value: string): string => {
-  if (!value.trim()) {
-    return 'Nomor telepon harus diisi'
-  }
-  const phoneClean = value.replace(/[-\s]/g, '')
-  if (!/^(\+62|08)[0-9]{9,11}$/.test(phoneClean)) {
-    return 'Nomor telepon tidak valid (harus dimulai dengan +62 atau 08)'
   }
   return ''
 }
@@ -148,7 +138,7 @@ export function RegisterForm({ onSubmit, isLoading = false }: RegisterFormProps)
           placeholder="Masukkan nama lengkap"
         />
         {touched.name && getnameError(formData.name) && (
-          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{getnameError(formData.name)}</span>
           </div>
@@ -171,7 +161,7 @@ export function RegisterForm({ onSubmit, isLoading = false }: RegisterFormProps)
           placeholder="nama@email.com"
         />
         {touched.email && getEmailError(formData.email) && (
-          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{getEmailError(formData.email)}</span>
           </div>
@@ -194,7 +184,7 @@ export function RegisterForm({ onSubmit, isLoading = false }: RegisterFormProps)
           placeholder="+62812345678 atau 08123456789"
         />
         {touched.phone && getPhoneError(formData.phone) && (
-          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{getPhoneError(formData.phone)}</span>
           </div>
@@ -226,7 +216,7 @@ export function RegisterForm({ onSubmit, isLoading = false }: RegisterFormProps)
           </button>
         </div>
         {touched.password && getPasswordError(formData.password) && (
-          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{getPasswordError(formData.password)}</span>
           </div>
@@ -329,7 +319,7 @@ export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
           placeholder="nama@email.com"
         />
         {touched.email && getEmailError(formData.email) && (
-          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{getEmailError(formData.email)}</span>
           </div>
@@ -361,7 +351,7 @@ export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
           </button>
         </div>
         {touched.password && getPasswordError(formData.password) && (
-          <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{getPasswordError(formData.password)}</span>
           </div>
