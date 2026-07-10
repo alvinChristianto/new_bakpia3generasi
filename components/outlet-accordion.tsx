@@ -37,7 +37,7 @@ export function OutletAccordion({ groups }: { groups: OutletGroup[] }) {
           value={group.id}
           className="bg-card border border-border rounded-lg px-4 md:px-6"
         >
-          <AccordionTrigger className="text-lg font-semibold text-foreground hover:no-underline">
+          <AccordionTrigger className="text-lg font-semibold text-foreground hover:text-primary hover:no-underline transition-colors">
             {group.title}
           </AccordionTrigger>
           <AccordionContent>
@@ -45,9 +45,9 @@ export function OutletAccordion({ groups }: { groups: OutletGroup[] }) {
               {group.outlets.map((outlet, index) => (
                 <div
                   key={index}
-                  className="bg-background border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                  className="group bg-background border border-border rounded-lg p-6 shadow-sm hover:shadow-md hover:border-primary/40 transition-all"
                 >
-                  <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground mb-2">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
                     <MapPin className="w-5 h-5 text-primary shrink-0" />
                     {outlet.name}
                   </h3>
