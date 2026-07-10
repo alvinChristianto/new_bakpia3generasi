@@ -6,7 +6,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { MapPin, Clock, ArrowUpRight, MessageCircle } from "lucide-react";
+import { MapPin, Clock, ArrowUpRight } from "lucide-react";
+import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 
 export type Outlet = {
   name: string;
@@ -75,9 +76,9 @@ export function OutletAccordion({ groups }: { groups: OutletGroup[] }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Hubungi ${outlet.name} via WhatsApp`}
-                        className="p-1 text-primary hover:bg-muted rounded-lg transition"
+                        className="p-1 hover:bg-muted rounded-lg transition"
                       >
-                        <MessageCircle className="w-4 h-4" />
+                        <WhatsappIcon className="w-4 h-4" />
                       </a>
                     )}
                   </div>
