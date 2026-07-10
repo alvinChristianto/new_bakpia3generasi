@@ -81,6 +81,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/outlet-kami" className="hover:text-background transition">
+                  Outlet Kami
+                </Link>
+              </li>
+              <li>
                 <Link href="https://bit.ly/lokercabin" className="hover:text-background transition">
                   Karir
                 </Link>
