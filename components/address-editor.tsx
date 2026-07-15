@@ -33,10 +33,19 @@ interface PickupFormState {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Serializes to YYYY-MM-DD from local components — toISOString() would shift
+ *  the day back for any positive UTC offset (all of Indonesia). */
+const toDateString = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
 const getMinDate = () => {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toISOString().split("T")[0];
+  return toDateString(tomorrow);
 };
 
 const timeToMinutes = (t: string) => {
@@ -427,9 +436,7 @@ export function AddressEditor({
                       mode="single"
                       selected={selectedCalendarDate}
                       onSelect={(date) => {
-                        const str = date
-                          ? date.toISOString().split("T")[0]
-                          : "";
+                        const str = date ? toDateString(date) : "";
                         setPickupForm({ ...pickupForm, pickupDate: str });
                         if (errors.pickupDate)
                           setErrors({ ...errors, pickupDate: "" });
