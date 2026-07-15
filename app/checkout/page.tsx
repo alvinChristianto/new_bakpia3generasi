@@ -48,6 +48,7 @@ import {
   getCheckoutConfig,
   type CheckoutConfig,
 } from "../api/endpoints/checkout-config";
+import { MIN_CHECKOUT_QTY } from "@/lib/order-rules";
 
 const DEFAULT_CHECKOUT_CONFIG: CheckoutConfig = {
   admin_fee_percent: 10,
@@ -86,7 +87,7 @@ function removeLastPartOrderId(orderId: string): string {
 export default function CheckoutPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { cart, subtotal, removeItem, updateQuantity } = useCart();
+  const { cart, cartCount, subtotal, removeItem, updateQuantity } = useCart();
   const { address, clearCourier } = useShipping();
   const shippingCost = getShippingCost(address);
   const courierStale = isCourierStale(address);
@@ -272,6 +273,7 @@ export default function CheckoutPage() {
         });
       }
     } catch (error: any) {
+      const orderItemsError = error?.response?.data?.errors?.order_items?.[0];
       const priceMismatchError =
         error?.response?.data?.errors?.price_mismatch?.[0];
       if (priceMismatchError) {
@@ -280,6 +282,8 @@ export default function CheckoutPage() {
           "Harga berubah, silakan muat ulang halaman.",
           "warning",
         );
+      } else if (orderItemsError) {
+        triggerModal("Pesanan Ditolak", orderItemsError, "fail");
       } else {
         triggerModal(
           "Sistem Error",
@@ -293,7 +297,14 @@ export default function CheckoutPage() {
   };
 
   const handleCompleteOrder = async () => {
-    
+    if (cartCount < MIN_CHECKOUT_QTY) {
+      triggerModal(
+        "Minimal Pembelian 2 Item",
+        `Pesanan minimal ${MIN_CHECKOUT_QTY} item. Silakan tambah jumlah pesanan Anda terlebih dahulu.`,
+        "warning",
+      );
+      return;
+    }
     if (!customerData?.namaPenerima || !customerData?.email || !customerData?.nomorTelepon) {
       setValidationAttempt((v) => v + 1);
       triggerModal(
@@ -301,8 +312,6 @@ export default function CheckoutPage() {
         "Silakan lengkapi nama, email, dan nomor telepon penerima terlebih dahulu.",
         "warning",
       );
-
-    console.log("test");
       return;
     }
     if (!isFormValid) {
@@ -312,8 +321,6 @@ export default function CheckoutPage() {
         "Periksa kembali nama, email, atau nomor telepon yang Anda masukkan.",
         "warning",
       );
-
-    console.log("test");
       return;
     }
     if (!address) {
@@ -322,8 +329,6 @@ export default function CheckoutPage() {
         "Silakan pilih alamat pengiriman atau outlet pengambilan terlebih dahulu.",
         "warning",
       );
-      
-    console.log("test");
       return;
     }
     if (courierStale) {
@@ -332,8 +337,6 @@ export default function CheckoutPage() {
         "Pilih ulang kurir pengiriman sebelum melanjutkan pembayaran.",
         "warning",
       );
-      
-    console.log("test");
       return;
     }
     await handleProceedPayment();
@@ -669,6 +672,11 @@ export default function CheckoutPage() {
                     "Lanjut Pembayaran"
                   )}
                 </Button>
+                {cartCount < MIN_CHECKOUT_QTY && (
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Minimal pembelian {MIN_CHECKOUT_QTY} item
+                  </p>
+                )}
               </div>
             </div>
           </div>
