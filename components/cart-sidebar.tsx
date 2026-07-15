@@ -1,13 +1,23 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { ShoppingBag, Plus, Minus, Trash2, X } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { ShoppingBag, Plus, Minus, Trash2, X, TriangleAlert } from 'lucide-react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { CartItem, useCart } from '@/hooks/use-cart'
 import { useShipping } from '@/hooks/use-shipping'
+import { MIN_CHECKOUT_QTY } from '@/lib/order-rules'
 
 interface CartSidebarProps {
   open: boolean
@@ -15,8 +25,19 @@ interface CartSidebarProps {
 }
 
 export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
-  const { cart, subtotal, removeItem, updateQuantity, clearCart } = useCart()
+  const router = useRouter()
+  const { cart, cartCount, subtotal, removeItem, updateQuantity, clearCart } = useCart()
   const { clearCourier } = useShipping()
+  const [isMinQtyModalOpen, setIsMinQtyModalOpen] = useState(false)
+
+  const handleCheckoutClick = () => {
+    if (cartCount < MIN_CHECKOUT_QTY) {
+      setIsMinQtyModalOpen(true)
+      return
+    }
+    onOpenChange(false)
+    router.push('/checkout')
+  }
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -153,16 +174,38 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
                 <p className="text-xs text-muted-foreground">
                   Biaya pengiriman akan dihitung di checkout
                 </p>
+                {cartCount < MIN_CHECKOUT_QTY && (
+                  <p className="text-xs text-muted-foreground">
+                    Minimal pembelian {MIN_CHECKOUT_QTY} item
+                  </p>
+                )}
               </div>
-              <Link href="/checkout" onClick={() => onOpenChange(false)} className="block">
-                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
-                  Checkout Sekarang
-                </Button>
-              </Link>
+              <Button
+                onClick={handleCheckoutClick}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+              >
+                Checkout Sekarang
+              </Button>
             </div>
           </>
         )}
       </SheetContent>
+
+      <Dialog open={isMinQtyModalOpen} onOpenChange={setIsMinQtyModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <TriangleAlert className="w-6 h-6 text-yellow-500 flex-shrink-0" />
+              <DialogTitle>Minimal Pembelian {MIN_CHECKOUT_QTY} Item</DialogTitle>
+            </div>
+            <DialogDescription>
+              Pesanan minimal {MIN_CHECKOUT_QTY} item. Silakan tambah jumlah pesanan Anda
+              terlebih dahulu.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter showCloseButton />
+        </DialogContent>
+      </Dialog>
     </Sheet>
   )
 }

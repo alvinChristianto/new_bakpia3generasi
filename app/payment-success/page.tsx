@@ -21,7 +21,6 @@ interface TransactionData {
   grand_total: number;
   shipping_address: string;
   shipping_cost: number;
-  tax_amount: number;
   created_at: string;
   shipping_address_snapshot: string;
   service_fee: number;

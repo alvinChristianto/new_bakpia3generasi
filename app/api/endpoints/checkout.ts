@@ -16,7 +16,6 @@ export const fetchExampleData = async (
 export const checkoutOrder = async (
   payload: any,
 ): Promise<ApiResponse<any>> => {
-  console.log(payload);
   const formData = {
     customer_data: payload.customerData,
     total_price: payload.totalPrice,
