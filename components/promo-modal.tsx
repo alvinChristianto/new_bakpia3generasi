@@ -25,11 +25,11 @@ export function PromoModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[85vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="max-w-[92vw] sm:max-w-md lg:max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
         {/* Promo image */}
-        <div className="relative w-full max-h-48 aspect-[16/9] bg-muted">
+        <div className="relative w-full aspect-square bg-muted">
           <Image
-            src="/bakpia-premium.jpg"
+            src="/promo.webp"
             alt="Bakpia premium"
             fill
             className="object-cover"
@@ -43,7 +43,7 @@ export function PromoModal() {
               <Sparkles className="w-5 h-5 text-primary" />
             </div>
             <DialogTitle className="text-xl font-bold text-card-foreground">
-              Selamat Datang di Bakpia Master!
+              Selamat Datang di Bakpia 3 Generasi!
             </DialogTitle>
           </div>
 

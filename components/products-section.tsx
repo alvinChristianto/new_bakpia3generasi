@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Search } from 'lucide-react'
+import { Search, Flame, SearchX } from 'lucide-react'
 import { ProductCard } from './product-card'
 import { ProductModal } from './product-modal'
 import { useCart } from '@/hooks/use-cart'
@@ -102,16 +102,22 @@ export function ProductsSection() {
   return (
     <section id="products" className="py-12 md:py-16 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-foreground text-balance mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-foreground text-balance mb-8">
           Koleksi produk Kami
         </h2>
 
         {/* Best sellers — curated highlight row */}
         {!loading && !error && bestSellers.length > 0 && (
           <div className="mb-10">
-            <h3 className="text-xl md:text-2xl font-bold text-foreground mb-4">
-              Paling Laris
-            </h3>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-sm">
+                <Flame className="w-4 h-4" fill="currentColor" />
+                Paling Laris
+              </span>
+              <span className="hidden sm:inline text-sm text-muted-foreground">
+                Favorit pelanggan kami
+              </span>
+            </div>
             {/* Snap carousel on mobile, grid on md+ */}
             <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {bestSellers.map((product) => (
@@ -200,8 +206,14 @@ export function ProductsSection() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-4 p-4 bg-muted rounded-full">
+              <SearchX className="w-12 h-12 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Produk tidak ditemukan
+            </h3>
+            <p className="text-muted-foreground text-sm">
               Tidak ada produk yang cocok dengan pencarian atau rasa ini.
             </p>
           </div>
