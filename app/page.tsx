@@ -3,6 +3,7 @@ import { Navbar } from '@/components/navbar'
 import { HeroSection } from '@/components/hero-section'
 import { ProductsSection } from '@/components/products-section'
 import { Footer } from '@/components/footer'
+import { PromoModal } from '@/components/promo-modal'
 
 export const metadata: Metadata = {
   title: 'Toko Bakpia Premium Asli Yogyakarta',
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      <PromoModal />
       <Navbar />
       <HeroSection />
       <ProductsSection />

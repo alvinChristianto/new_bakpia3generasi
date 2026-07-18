@@ -3,16 +3,11 @@
 import Image from "next/image";
 import { Star, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { Product } from "@/app/types/product";
 
-interface ProductCardProps {
-  id: string;
-  name: string;
-  image: string;
-  rating: number;
-  price: number;
-  description: string;
-  category: string;
+interface ProductCardProps extends Product {
   onAddToCart: (id: string) => void;
   onOpenModal: () => void;
 }
@@ -25,6 +20,7 @@ export function ProductCard({
   price,
   description,
   category,
+  flavor,
   onAddToCart,
   onOpenModal,
 }: ProductCardProps) {
@@ -76,6 +72,13 @@ export function ProductCard({
             {name}
           </h3>
         </button>
+
+        {/* Flavor */}
+        {flavor && (
+          <Badge variant="secondary" className="mb-2">
+            {flavor}
+          </Badge>
+        )}
 
         {/* Rating */}
         <div className="flex items-center gap-2 mb-4">
