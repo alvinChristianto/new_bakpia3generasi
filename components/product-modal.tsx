@@ -5,17 +5,9 @@ import Image from 'next/image'
 import { X, Minus, Plus, ShoppingCart, Star, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useCart } from '@/hooks/use-cart'
-
-interface Product {
-  id: string
-  name: string
-  image: string | string[]
-  rating: number
-  price: number
-  description: string
-  category: string
-}
+import { Product } from '@/app/types/product'
 
 interface ProductModalProps {
   product: Product | null
@@ -147,6 +139,13 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
             <DialogTitle className="text-xl font-bold text-foreground leading-tight pr-6">
               {product.name}
             </DialogTitle>
+
+            {/* Flavor */}
+            {product.flavor && (
+              <Badge variant="secondary" className="w-fit">
+                {product.flavor}
+              </Badge>
+            )}
 
             {/* Rating */}
             <div className="flex items-center gap-2">
