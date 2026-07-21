@@ -68,6 +68,12 @@ export function Navbar() {
               >
                 Tentang Kami
               </Link>
+              <Link
+                href="/outlet-kami"
+                className="text-foreground hover:text-primary transition"
+              >
+                Outlet Kami
+              </Link>
             </div>
           </div>
 
@@ -177,6 +183,13 @@ export function Navbar() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Tentang Kami
+              </Link>
+              <Link
+                href="/outlet-kami"
+                className="px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Outlet Kami
               </Link>
               <div className="border-t border-border my-2" />
               <Link
