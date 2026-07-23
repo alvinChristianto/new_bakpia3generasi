@@ -5,6 +5,7 @@ import { Search, Flame, SearchX } from 'lucide-react'
 import { ProductCard } from './product-card'
 import { ProductModal } from './product-modal'
 import { useCart } from '@/hooks/use-cart'
+import { toCartImage } from '@/components/cart-provider'
 import { getAllActiveProducts } from '@/app/api/endpoints/all_active_products'
 import { Product } from '@/app/types/product'
 
@@ -80,7 +81,7 @@ export function ProductsSection() {
         id: product.id,
         name: product.name,
         price: product.price,
-        image: Array.isArray(product.image) ? product.image[0] : product.image,
+        image: toCartImage(product.image),
       })
     }
   }
