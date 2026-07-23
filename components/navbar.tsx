@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ShoppingCart, User, Menu, X } from "lucide-react";
 import { CartSidebar } from "@/components/cart-sidebar";
+import { CartAddedToast } from "@/components/cart-added-toast";
 import { LogoutModal } from "@/components/logout-modal";
 import { useCart } from "@/hooks/use-cart";
 import { useSession, signOut } from "next-auth/react";
@@ -15,7 +16,18 @@ export function Navbar() {
   const [isAuthDropdownOpen, setIsAuthDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { cartCount } = useCart();
+  const { cartCount, cartNotice, dismissCartNotice } = useCart();
+  const cueActive = cartNotice !== null;
+
+  // A fresh add collapses the mobile menu so the notification doesn't cover it.
+  useEffect(() => {
+    if (cartNotice) setIsMenuOpen(false);
+  }, [cartNotice]);
+
+  const openCart = () => {
+    dismissCartNotice();
+    setIsCartOpen(true);
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -139,17 +151,52 @@ export function Navbar() {
                 </div>
               )}
             </div>
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-2 hover:bg-muted rounded-lg transition"
-            >
-              <ShoppingCart className="w-5 h-5 text-foreground" />
-              {cartCount > 0 && (
-                <span className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                  {cartCount}
-                </span>
+            {/* Cart button — also the anchor for the add-to-cart notification */}
+            <div className="relative">
+              <button
+                onClick={openCart}
+                aria-label="Buka keranjang"
+                className={`relative p-2 hover:bg-muted rounded-lg transition-all duration-300 ${
+                  cueActive
+                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                    : ""
+                }`}
+              >
+                {cueActive && (
+                  <span
+                    key={cartNotice.nonce}
+                    aria-hidden
+                    className="absolute inset-0 rounded-lg bg-primary/20 animate-ping"
+                  />
+                )}
+                <ShoppingCart
+                  key={cartNotice ? `icon-${cartNotice.nonce}` : "icon"}
+                  className={`w-5 h-5 relative ${
+                    cueActive ? "text-primary animate-cart-pop" : "text-foreground"
+                  }`}
+                />
+                {cartCount > 0 && (
+                  <span
+                    className={`absolute top-0 right-0 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold transition-transform duration-300 ${
+                      cueActive ? "scale-125" : "scale-100"
+                    }`}
+                  >
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Mobile pointer arrow — the toast is fixed on mobile, so the
+                  arrow stays anchored to the icon instead of to the card. */}
+              {cueActive && (
+                <span
+                  aria-hidden
+                  className="sm:hidden absolute left-1/2 top-full z-50 w-3 h-3 -translate-x-1/2 translate-y-[14px] rotate-45 border-l border-t border-border bg-card"
+                />
               )}
-            </button>
+
+              <CartAddedToast notice={cartNotice} onOpenCart={openCart} />
+            </div>
 
             {/* Mobile Menu Button */}
             <button
