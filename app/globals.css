@@ -3,6 +3,22 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Cart icon reaction when a product is added to the cart. */
+@keyframes cart-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.35) rotate(-8deg);
+  }
+  70% {
+    transform: scale(0.95) rotate(4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
 :root {
   --background: oklch(0.99 0.001 70);
   --foreground: oklch(0.2 0.01 42);
@@ -75,6 +91,7 @@
 }
 
 @theme inline {
+  --animate-cart-pop: cart-pop 0.6s ease-out;
   --font-sans: 'Geist', 'Geist Fallback';
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);

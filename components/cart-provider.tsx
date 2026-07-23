@@ -11,6 +11,19 @@ export interface CartItem {
   note?: string
 }
 
+/**
+ * Transient signal emitted on every `addItem`, consumed by the navbar to show
+ * the "produk telah ditambahkan" notification and animate the cart icon.
+ * `nonce` changes on each add so repeat adds replay the animation.
+ */
+export interface CartNotice {
+  productName: string
+  nonce: number
+}
+
+/** How long the add-to-cart notification stays on screen. */
+const NOTICE_DURATION = 2000
+
 interface CartContextType {
   cart: CartItem[]
   cartCount: number
@@ -20,6 +33,8 @@ interface CartContextType {
   updateQuantity: (id: string, quantity: number) => void
   clearCart: () => void
   mounted: boolean
+  cartNotice: CartNotice | null
+  dismissCartNotice: () => void
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -27,6 +42,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [mounted, setMounted] = useState(false)
+  const [cartNotice, setCartNotice] = useState<CartNotice | null>(null)
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -48,7 +64,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [cart, mounted])
 
+  // Auto-dismiss the add-to-cart notification. Re-adding bumps `nonce`, which
+  // re-runs this effect and restarts the countdown instead of stacking toasts.
+  useEffect(() => {
+    if (!cartNotice) return
+    const timer = setTimeout(() => setCartNotice(null), NOTICE_DURATION)
+    return () => clearTimeout(timer)
+  }, [cartNotice])
+
   const addItem = (item: Omit<CartItem, 'quantity'>) => {
+    setCartNotice((prev) => ({
+      productName: item.name,
+      nonce: (prev?.nonce ?? 0) + 1,
+    }))
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id)
       if (existingItem) {
@@ -82,6 +110,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCart([])
   }
 
+  const dismissCartNotice = () => {
+    setCartNotice(null)
+  }
+
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0)
   const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0)
 
@@ -94,6 +126,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     updateQuantity,
     clearCart,
     mounted,
+    cartNotice,
+    dismissCartNotice,
   }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
