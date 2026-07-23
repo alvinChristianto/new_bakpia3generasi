@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/dashboard/', '/checkout/', '/login/', '/register/', '/payment-success/', '/api/'],
     },
-    sitemap: 'https://bakpia3generasi.com/sitemap.xml',
+    sitemap: 'https://bakpia3generasi.id/sitemap.xml',
   }
 }

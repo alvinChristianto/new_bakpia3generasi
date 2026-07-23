@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tentang Kami - Bakpia 3 Generasi",
     description: "Pelajari sejarah dan keunikan Bakpia 3 Generasi.",
-    images: ["/bakpia-about.webp"],
+    images: ["/promo.webp"],
   },
 };
 
