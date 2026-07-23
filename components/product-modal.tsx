@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useCart } from '@/hooks/use-cart'
+import { toCartImage } from '@/components/cart-provider'
 import { Product } from '@/app/types/product'
 
 interface ProductModalProps {
@@ -47,7 +48,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
         id: product.id,
         name: product.name,
         price: product.price,
-        image: product.image as string,
+        image: toCartImage(product.image),
       })
     }
     onClose()

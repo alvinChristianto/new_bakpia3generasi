@@ -91,4 +91,18 @@ describe("CartProvider / useCart", () => {
     expect(result.current.cartCount).toBe(3);
     expect(result.current.subtotal).toBe(3 * sampleItem.price);
   });
+
+  it("normalizes an array-shaped image from a legacy persisted cart", async () => {
+    localStorage.setItem(
+      "bakpia-cart",
+      JSON.stringify([
+        { ...sampleItem, image: ["olproducts/foo.jpg", "olproducts/bar.jpg"], quantity: 1 },
+      ]),
+    );
+
+    const { result } = renderHook(() => useCart(), { wrapper });
+    await waitFor(() => expect(result.current.mounted).toBe(true));
+
+    expect(result.current.cart[0].image).toBe("olproducts/foo.jpg");
+  });
 });

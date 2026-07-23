@@ -107,7 +107,11 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
                     {/* Product Image */}
                     <div className="relative flex-shrink-0 w-20 h-20 bg-background rounded-md overflow-hidden">
                       <Image
-                        src={`${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${item.image[0]}`  || "/placeholder.svg"}
+                        src={
+                          item.image
+                            ? `${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${item.image}`
+                            : '/placeholder.svg'
+                        }
                         alt={item.name}
                         fill
                         className="object-cover"

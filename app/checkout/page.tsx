@@ -469,8 +469,9 @@ export default function CheckoutPage() {
                       <div className="relative w-24 h-24 bg-background rounded-md overflow-hidden flex-shrink-0">
                         <Image
                           src={
-                            `${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${item.image[0]}` ||
-                            "/placeholder.svg"
+                            item.image
+                              ? `${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${item.image}`
+                              : "/placeholder.svg"
                           }
                           alt={item.name}
                           fill

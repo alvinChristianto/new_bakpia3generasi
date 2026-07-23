@@ -6,9 +6,19 @@ export interface CartItem {
   id: string
   name: string
   price: number
+  /** Storage-relative path of a single image, e.g. `olproducts/foo.jpg`. */
   image: string
   quantity: number
   note?: string
+}
+
+/**
+ * The API returns `OlProduct.image` as an array (the model casts it to one);
+ * the cart only ever keeps the first path. Every `addItem` caller must funnel
+ * its image through here so readers can render `item.image` directly.
+ */
+export function toCartImage(image: string | string[] | null | undefined): string {
+  return (Array.isArray(image) ? image[0] : image) ?? ''
 }
 
 /**
@@ -49,7 +59,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const savedCart = localStorage.getItem('bakpia-cart')
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart))
+        // Carts saved before `image` was normalized may hold the raw array,
+        // so re-normalize on load instead of leaving those items broken.
+        const parsed: CartItem[] = JSON.parse(savedCart)
+        setCart(parsed.map((item) => ({ ...item, image: toCartImage(item.image) })))
       } catch (error) {
         console.error('Failed to parse cart from localStorage:', error)
       }
