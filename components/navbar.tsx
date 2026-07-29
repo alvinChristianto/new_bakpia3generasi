@@ -11,6 +11,8 @@ import { useSession, signOut } from "next-auth/react";
 
 export function Navbar() {
   const { data: session, status } = useSession(); // Cek status login
+  const isAuthed = status === "authenticated";
+  const isAuthLoading = status === "loading";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthDropdownOpen, setIsAuthDropdownOpen] = useState(false);
@@ -101,7 +103,12 @@ export function Navbar() {
               </button>
               {isAuthDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
-                  {status === "authenticated" ? (
+                  {isAuthLoading ? (
+                    <div className="px-4 py-3 space-y-2" aria-hidden>
+                      <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+                      <div className="h-4 w-36 bg-muted rounded animate-pulse" />
+                    </div>
+                  ) : isAuthed ? (
                     <>
                       {/* Menu jika SUDAH login */}
                       <div className="px-4 py-3 border-b border-border bg-muted/30">
@@ -239,18 +246,54 @@ export function Navbar() {
                 Outlet Kami
               </Link>
               <div className="border-t border-border my-2" />
-              <Link
-                href="/login"
-                className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
-              >
-                Masuk
-              </Link>
-              <Link
-                href="/register"
-                className="block px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
-              >
-                Daftar
-              </Link>
+              {isAuthLoading ? (
+                <div className="px-4 py-2 space-y-2" aria-hidden>
+                  <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                  <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                </div>
+              ) : isAuthed ? (
+                <>
+                  <div className="px-4 py-2">
+                    <p className="text-xs text-muted-foreground">Masuk sebagai</p>
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {session.user?.email}
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard"
+                    className="px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsLogoutModalOpen(true);
+                    }}
+                    className="w-full text-left px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition"
+                  >
+                    Keluar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Masuk
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="px-4 py-2 text-foreground hover:bg-muted rounded-lg transition"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Daftar
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}
