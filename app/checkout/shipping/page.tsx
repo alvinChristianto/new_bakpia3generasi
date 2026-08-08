@@ -22,6 +22,7 @@ import {
   getDistricts,
   getSubDistricts,
 } from "@/lib/kiriminaja";
+import { isProvinceServiceable } from "@/lib/shipping-areas";
 import { getShippingPricing } from "@/app/api/endpoints/shipping";
 import type {
   Province,
@@ -147,14 +148,21 @@ function CourierCard({
 
 export default function ShippingPage() {
   const router = useRouter();
-  const { address, setAddress } = useShipping();
+  const { address, setAddress, clearAddress } = useShipping();
   const { cart, subtotal } = useCart();
 
   // ── total quantity drives package dimensions (computed server-side) ────────
   const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   // ── pre-populate from existing delivery address in store ───────────────────
-  const existingDelivery = address?.type === "delivery" ? address : null;
+  // A stored address may sit in a province that has since been removed from
+  // ALLOWED_PROVINCE_IDS. Treat it as absent so every cascade field below
+  // starts empty instead of half-filled with an unshippable destination.
+  const storedDelivery = address?.type === "delivery" ? address : null;
+  const storedProvinceUnserviceable =
+    storedDelivery !== null &&
+    !isProvinceServiceable(storedDelivery.province_id);
+  const existingDelivery = storedProvinceUnserviceable ? null : storedDelivery;
 
   // ── cascade state — init from store if available ───────────────────────────
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -192,11 +200,18 @@ export default function ShippingPage() {
 
   // ── toast ──────────────────────────────────────────────────────────────────
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState(
+    "✓ Layanan pengiriman sudah diperbarui",
+  );
 
-  const showToast = () => {
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 3000);
-  };
+  const showToast = useCallback(
+    (message = "✓ Layanan pengiriman sudah diperbarui") => {
+      setToastMessage(message);
+      setToastVisible(true);
+      setTimeout(() => setToastVisible(false), 3000);
+    },
+    [],
+  );
 
   // ── load provinces on mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -206,6 +221,16 @@ export default function ShippingPage() {
       .catch(console.error)
       .finally(() => setLoadingProvinces(false));
   }, []);
+
+  // ── drop a stored address that is now outside the shipping coverage ────────
+  // The Zustand store survives client-side navigation, so a customer can still
+  // be carrying an address picked before the coverage list was narrowed.
+  useEffect(() => {
+    if (!storedProvinceUnserviceable) return;
+    clearAddress();
+    showToast("⚠ Alamat tersimpan di luar area pengiriman. Silakan pilih ulang.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount only
 
   // ── pre-load cascade dropdowns when returning with existing address ─────────
   useEffect(() => {
@@ -396,10 +421,7 @@ export default function ShippingPage() {
   return (
     <>
       <Navbar />
-      <Toast
-        message="✓ Layanan pengiriman sudah diperbarui"
-        visible={toastVisible}
-      />
+      <Toast message={toastMessage} visible={toastVisible} />
 
       <main className="min-h-screen bg-background py-6">
         <div className="max-w-2xl mx-auto px-4">
