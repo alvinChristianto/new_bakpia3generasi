@@ -18,10 +18,6 @@ export async function POST(
   const path = pathSegments.join("/");
   const upstreamUrl = `${baseUrl}/api/mitra/${path}`;
 
-  console.log("Hitting upstream:", upstreamUrl); // 👈 add this
-  console.log("API Key exists:", apiKey); // 👈 add this
-  console.log("path   segments:", pathSegments); // 👈 add this
-
   let body: unknown = undefined;
   try {
     body = await request.json();
@@ -42,6 +38,5 @@ export async function POST(
   });
 
   const data = await upstream.json();
-  console.log("Upstream response:", data); // 👈 add this
   return NextResponse.json(data, { status: upstream.status });
 }

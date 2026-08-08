@@ -4,6 +4,7 @@ import type {
   District,
   SubDistrict,
 } from "../app/types/kiriminaja";
+import { isProvinceServiceable } from "./shipping-areas";
 
 /**
  * All KiriminAja calls are proxied through our own Next.js API route
@@ -43,7 +44,10 @@ async function post<T>(
 // POST /api/mitra/province
 export async function getProvinces(): Promise<Province[]> {
   const data = await post<{ status: boolean; datas: Province[] }>("/province");
-  return data.datas;
+  // KiriminAja returns all 37 Indonesian provinces. Narrow it to the areas the
+  // bakery actually ships to, so customers never start a cascade they can't
+  // finish — the coverage list lives in lib/shipping-areas.ts.
+  return data.datas.filter((p) => isProvinceServiceable(p.id));
 }
 
 // POST /api/mitra/city — body: { provinsi_id }
