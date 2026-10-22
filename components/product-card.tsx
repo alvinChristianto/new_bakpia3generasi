@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { Star, ShoppingCart } from "lucide-react";
+import { Star, ShoppingCart, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DiscountedPrice } from "@/components/discounted-price";
 import { useState } from "react";
 import { Product } from "@/app/types/product";
 
@@ -18,6 +19,9 @@ export function ProductCard({
   image,
   rating,
   price,
+  original_price,
+  discount_label,
+  discount_source,
   description,
   category,
   flavor,
@@ -32,17 +36,11 @@ export function ProductCard({
     setTimeout(() => setIsAdding(false), 300);
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const imageSrc = image && image.length > 0 
-    ? `${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${image[0]}` 
+  const imageSrc = image && image.length > 0
+    ? `${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${image[0]}`
     : "/placeholder.svg";
+
+  const hasDiscount = original_price != null && original_price > price;
 
   return (
     <div className="bg-card rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
@@ -59,6 +57,12 @@ export function ProductCard({
           className="object-cover group-hover:scale-105 transition-transform duration-300"
           unoptimized
         />
+        {hasDiscount && discount_source === "flash_sale" && (
+          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-sm">
+            <Zap className="w-3.5 h-3.5" fill="currentColor" />
+            Flash Sale
+          </span>
+        )}
       </button>
 
       {/* Product Info */}
@@ -99,10 +103,14 @@ export function ProductCard({
           </span>
         </div>
 
-        {/* Price */}
-        <p className="text-2xl font-bold text-primary mb-4">
-          {formatPrice(price)}
-        </p>
+        {/* Price — strike-through original when discounted */}
+        <div className="mb-4">
+          <DiscountedPrice
+            price={price}
+            originalPrice={original_price}
+            discountLabel={hasDiscount ? discount_label : null}
+          />
+        </div>
 
         {/* Add to Cart Button */}
         <Button

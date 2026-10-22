@@ -2,8 +2,10 @@ import { Metadata } from 'next'
 import { Navbar } from '@/components/navbar'
 import { HeroSection } from '@/components/hero-section'
 import { ProductsSection } from '@/components/products-section'
+import { FlashSaleSection } from '@/components/flash-sale-section'
 import { Footer } from '@/components/footer'
 import { PromoModal } from '@/components/promo-modal'
+import { getActiveFlashSale } from '@/app/api/endpoints/flash-sales'
 
 export const metadata: Metadata = {
   title: 'Toko Bakpia Premium Asli Yogyakarta',
@@ -11,12 +13,18 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
 }
 
-export default function Home() {
+// Flash-sale availability changes with time — never prerender the homepage.
+export const dynamic = 'force-dynamic'
+
+export default async function Home() {
+  const activeFlashSale = await getActiveFlashSale()
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <PromoModal />
+      <PromoModal flashSale={activeFlashSale} />
       <Navbar />
       <HeroSection />
+      <FlashSaleSection initialSale={activeFlashSale} />
       <ProductsSection />
       <Footer />
     </div>

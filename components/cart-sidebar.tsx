@@ -13,11 +13,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { ShoppingBag, Plus, Minus, Trash2, X, TriangleAlert } from 'lucide-react'
+import { ShoppingBag, Plus, Minus, Trash2, X, TriangleAlert, Zap } from 'lucide-react'
 import Image from 'next/image'
 import { CartItem, useCart } from '@/hooks/use-cart'
 import { useShipping } from '@/hooks/use-shipping'
 import { MIN_CHECKOUT_QTY } from '@/lib/order-rules'
+import { formatRupiah } from '@/lib/utils'
+import { Countdown } from '@/components/countdown'
 
 interface CartSidebarProps {
   open: boolean
@@ -30,6 +32,12 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
   const { clearCourier } = useShipping()
   const [isMinQtyModalOpen, setIsMinQtyModalOpen] = useState(false)
 
+  const hasExpiredFlashItem = cart.some(
+    (item) =>
+      item.flash_sale_ends_at != null &&
+      new Date(item.flash_sale_ends_at).getTime() <= Date.now(),
+  )
+
   const handleCheckoutClick = () => {
     if (cartCount < MIN_CHECKOUT_QTY) {
       setIsMinQtyModalOpen(true)
@@ -39,14 +47,6 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
     router.push('/checkout')
   }
 
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount)
-  }
-  
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:w-[400px] flex flex-col bg-background p-0">
@@ -124,9 +124,41 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
                       <h4 className="font-semibold text-foreground text-sm truncate">
                         {item.name}
                       </h4>
+                      {item.original_price != null && item.original_price > item.price && (
+                        <p className="text-xs text-muted-foreground line-through">
+                          {formatRupiah(item.original_price)}
+                        </p>
+                      )}
                       <p className="text-primary font-bold text-sm mt-1">
                         {formatRupiah(item.price)}
                       </p>
+                      {item.price_changed && (
+                        <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                          Harga berubah
+                        </span>
+                      )}
+                      {item.flash_sale_ends_at != null &&
+                        new Date(item.flash_sale_ends_at).getTime() > Date.now() && (
+                          <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-red-800">
+                            <Zap className="w-3 h-3" fill="currentColor" />
+                            Berakhir{' '}
+                            <Countdown
+                              initialRemainingSeconds={Math.max(
+                                0,
+                                Math.floor(
+                                  (new Date(item.flash_sale_ends_at).getTime() - Date.now()) /
+                                    1000,
+                                ),
+                              )}
+                            />
+                          </span>
+                        )}
+                      {item.flash_sale_ends_at != null &&
+                        new Date(item.flash_sale_ends_at).getTime() <= Date.now() && (
+                          <span className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                            Harga flash sale telah berakhir
+                          </span>
+                        )}
 
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-2 mt-2">
@@ -175,6 +207,12 @@ export function CartSidebar({ open, onOpenChange }: CartSidebarProps) {
                     {formatRupiah(subtotal)}
                   </span>
                 </div>
+                {hasExpiredFlashItem && (
+                  <p className="text-xs text-muted-foreground">
+                    Beberapa harga flash sale di keranjang telah berakhir — harga
+                    terbaru akan dicek saat checkout.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Biaya pengiriman akan dihitung di checkout
                 </p>
