@@ -4,7 +4,7 @@ Guidance for Claude Code when working inside the Next.js storefront. For cross-r
 
 ## Purpose
 
-**Bakpia Master** — a Next.js 16 (App Router) e-commerce storefront for an Indonesian bakpia shop. This is a pure client of the Laravel backend at `../bakpiajurnal/`; it owns no business data, only UX state (cart, courier selection).
+**Bakpia Master** — a Next.js 16 (App Router) e-commerce storefront for an Indonesian bakpia shop. This is a pure client of the Laravel backend at `../bakpiajurnal/`; it owns no business data, only UX state (cart, courier selection). The homepage ships a promo modal, flavor-category chips, product search, and a best-sellers section.
 
 ## Commands
 
@@ -27,30 +27,34 @@ Unit tests live in `app/api/endpoints/*.test.ts` (Vitest). **Also verify changes
 - **axios** for backend calls
 - **react-hook-form** + **zod** for forms and validation
 - **sonner** for toasts; **lucide-react** for icons
+- **@next/third-parties/google** — GA4 (gtag.js) tracking
 
 ## Directory Map
 
 | Path | Role |
 |---|---|
-| `app/` | App Router pages — `page.tsx`, `checkout/`, `dashboard/`, `login/`, `register/`, `payment-success/`, `tentang-kami/`, `not-found.tsx`. |
+| `app/` | App Router pages — `page.tsx` (homepage), `checkout/`, `dashboard/`, `login/`, `register/`, `forgot-password/`, `reset-password/`, `verify-email/`, `payment-success/`, `outlet-kami/`, `tentang-kami/`, `not-found.tsx`, `robots.ts`, `sitemap.ts`. |
 | `app/dashboard/orders/` | Order list with status filters. |
 | `app/dashboard/orders/[invoice]/` | Order detail page with KiriminAja shipping tracking timeline. |
 | `app/dashboard/edit-profile/` | Edit display name and email for the logged-in customer. |
 | `app/dashboard/edit-addresses/` | Manage saved delivery addresses. |
 | `app/api/client.ts` | Single axios instance using `NEXT_PUBLIC_BE_ROUTE` as base URL. |
-| `app/api/endpoints/` | One module per backend call — `all_active_products.ts`, `checkout.ts`, `transaction_by_invoicenumber.ts`, `profile.ts`. |
+| `app/api/endpoints/` | One module per backend call — `all_active_products.ts`, `checkout.ts`, `checkout-config.ts`, `email-verification.ts`, `linked-accounts.ts`, `outlets.ts`, `password-reset.ts`, `profile.ts`, `shipping.ts`, `transaction_by_invoicenumber.ts` (co-located `*.test.ts` files run under Vitest). |
 | `app/api/auth/` | next-auth route handler. |
 | `app/api/kiriminaja/[...path]/route.ts` | **Server-side proxy** to KiriminAja. Injects `KIRIMINAJA_API_KEY`; the browser must never call upstream directly. |
 | `app/types/` | Shared TypeScript types. |
 | `auth.ts` | next-auth v5 config. Exchanges Google identity for a Laravel Sanctum token via `/api/auth/google/callback`. |
 | `middleware.ts` | Gates `/dashboard/**` behind a logged-in session. |
-| `components/` | Feature components (`cart-sidebar`, `checkout-form`, `address-editor`, `product-card`, `navbar`, etc.). |
+| `components/` | Feature components (`cart-sidebar`, `checkout-form`, `address-editor`, `product-card`, `promo-modal`, `outlet-accordion`, `cart-added-toast`, `navbar`, etc.). |
 | `components/ui/` | shadcn primitives — don't hand-roll, install via `npx shadcn@latest add <name>`. |
 | `components/providers/` | Top-level providers (theme, session, cart). |
 | `hooks/` | `use-cart.ts` (Context wrapper), `use-shipping.ts` (Zustand, in-memory). |
 | `lib/kiriminaja.ts` | Browser-side wrappers that call `/api/kiriminaja/...` (the proxy, not upstream). |
 | `app/api/endpoints/shipping.ts` | Shipping-price quote call to Laravel (`POST /api/shipping/pricing`). Dimensions/origin are computed backend-side. |
 | `lib/utils.ts` | `cn()` and other shared helpers. |
+| `lib/order-rules.ts` | Checkout rules (minimum order quantity). |
+| `lib/phone-validation.ts` | Phone-number formatting/validation. |
+| `lib/shipping-areas.ts` | Delivery province allow-list (Jawa + Bali + Sumatera) — IDs from KiriminAja `POST /api/mitra/province`. |
 
 ## Backend Communication
 
@@ -78,7 +82,7 @@ Two independent stores — do not merge them:
 
 1. Collect customer info (`CheckoutForm`) and address + courier (`AddressEditor`).
 2. Shipping cost comes from the `SelectedCourier` in the Zustand store.
-3. Tax line is currently a hardcoded **10% of subtotal**, labeled "Biaya Admin". If this needs to be dynamic, move it to the backend so it's authoritative.
+3. The "Biaya Admin" fee is **backend-authoritative**: percent and cap are fetched from `GET /api/checkout/config` (`app/api/endpoints/checkout-config.ts`) — 10% of subtotal capped at Rp 10.000 (`config/bakpia.php` on the backend). The frontend only displays it.
 4. On submit, call `checkoutOrder` (`app/api/endpoints/checkout.ts`) → Laravel `POST /api/midtranstokenv1`, which returns a Midtrans `snap_token`.
 5. Midtrans Snap JS is loaded via `<Script src={NEXT_PUBLIC_SNAP_URL}>` and handles the payment UI in the browser. The webhook hits Laravel, not this app.
 
@@ -86,6 +90,7 @@ Two independent stores — do not merge them:
 
 - **Coverage area** (province/city/kecamatan/kelurahan dropdowns): browser → `/api/kiriminaja/[...path]/route.ts` → upstream `KIRIMINAJA_BASE_URL`. The key is injected server-side. `lib/kiriminaja.ts` holds these wrappers.
 - **Shipping-price quote**: calculated by the **Laravel backend**, not the frontend. The shipping page calls `getShippingPricing` (`app/api/endpoints/shipping.ts` → `POST /api/shipping/pricing`) with just `destination_kecamatan_id`, `destination_kelurahan_id`, `total_qty`, and `item_value`. The warehouse origin and box dimensions live in the backend's `config/kiriminaja.php` as the single source of truth — there is no frontend dimension math. If the bakery changes warehouses or box sizes, update that config.
+- **Delivery coverage**: provinces are restricted to the shipping coverage area (Jawa, Bali, Sumatera) via the allow-list in `lib/shipping-areas.ts`.
 
 ## UI Conventions
 
