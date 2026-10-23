@@ -13,3 +13,14 @@ export function formatRupiah(amount: number) {
     minimumFractionDigits: 0,
   }).format(amount)
 }
+
+/**
+ * Resolve a backend-stored media path (or already absolute URL) into a
+ * loadable <Image> src. Handles backend-hosted `/storage/...` uploads.
+ */
+export function resolveBackendAssetUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (path.startsWith("http")) return path
+  if (path.startsWith("/")) return `${process.env.NEXT_PUBLIC_BE_ROUTE}${path}`
+  return `${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${path}`
+}

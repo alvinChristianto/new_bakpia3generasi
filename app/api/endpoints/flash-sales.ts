@@ -1,5 +1,5 @@
 import apiClient from "../client";
-import { ActiveFlashSale } from "@/app/types/flash-sale";
+import { ActiveFlashSale, UpcomingFlashSale } from "@/app/types/flash-sale";
 
 /**
  * Fetch the currently published flash sale (backend-cached 30 s).
@@ -14,5 +14,19 @@ export const getActiveFlashSale = async (): Promise<ActiveFlashSale | null> => {
     return data ?? null;
   } catch {
     return null;
+  }
+};
+
+/**
+ * Fetch published sales that have not started yet (soonest first, max 3).
+ * Resolves to `[]` on any failure so callers treat it as "no teaser".
+ */
+export const getUpcomingFlashSales = async (): Promise<UpcomingFlashSale[]> => {
+  try {
+    const response = await apiClient.get("/api/flash-sales/upcoming");
+    const data = response?.data?.data;
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
   }
 };

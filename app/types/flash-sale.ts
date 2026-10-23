@@ -26,8 +26,12 @@ export interface FlashSaleItem {
 export interface ActiveFlashSale {
   id: string
   name: string
+  /** Square (1:1) banner — shown in the welcome modal. */
   banner_url: string | null
   banner_alt: string | null
+  /** Landscape (≈3:1) banner — shown as the wide homepage banner. */
+  banner_rect_url: string | null
+  banner_rect_alt: string | null
   start_at: string
   end_at: string
   /** Server clock snapshot — anchor countdowns to this, never the browser clock. */
@@ -41,3 +45,20 @@ export type FlashSaleProduct = Product & Pick<
   FlashSaleItem,
   'sold_count' | 'quota' | 'sold_out' | 'progress_percent'
 >
+
+/** A published sale that has not started yet, from `GET /api/flash-sales/upcoming`. */
+export interface UpcomingFlashSale {
+  id: string
+  name: string
+  /** Square (1:1) banner — shown in the welcome modal. */
+  banner_url: string | null
+  banner_alt: string | null
+  /** Landscape (≈3:1) banner — shown as the wide homepage banner. */
+  banner_rect_url: string | null
+  banner_rect_alt: string | null
+  start_at: string
+  end_at: string
+}
+
+/** How long before a sale starts that the storefront shows the teaser banner. */
+export const FLASH_SALE_TEASER_WINDOW_MS = 24 * 60 * 60 * 1000
