@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { X, Minus, Plus, ShoppingCart, Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Minus, Plus, ShoppingCart, Star, ChevronLeft, ChevronRight, Zap } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useCart } from '@/hooks/use-cart'
 import { toCartImage } from '@/components/cart-provider'
+import { DiscountedPrice } from '@/components/discounted-price'
+import { Countdown } from '@/components/countdown'
+import { formatRupiah } from '@/lib/utils'
 import { Product } from '@/app/types/product'
 
 interface ProductModalProps {
@@ -15,13 +18,6 @@ interface ProductModalProps {
   isOpen: boolean
   onClose: () => void
 }
-
-const formatPrice = (price: number) =>
-  new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
 
 export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
   const [qty, setQty] = useState(1)
@@ -42,6 +38,20 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
     (img) => `${process.env.NEXT_PUBLIC_BE_ROUTE}/storage/${img}`,
   )
 
+  const originalPrice = product.original_price ?? null
+  const hasDiscount = originalPrice != null && originalPrice > product.price
+  const isFlash = hasDiscount && product.discount_source === 'flash_sale'
+  // Seconds left on the flash sale, computed from backend timestamps.
+  const flashSecondsLeft = product.flash_sale_ends_at
+    ? Math.max(
+        0,
+        Math.floor(
+          (new Date(product.flash_sale_ends_at).getTime() - Date.now()) / 1000,
+        ),
+      )
+    : null
+  const savings = hasDiscount ? (originalPrice as number) - product.price : null
+
   const handleAddToCart = () => {
     for (let i = 0; i < qty; i++) {
       addItem({
@@ -49,6 +59,12 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
         name: product.name,
         price: product.price,
         image: toCartImage(product.image),
+        original_price: product.original_price ?? undefined,
+        discount_label: hasDiscount ? product.discount_label : undefined,
+        discount_source: hasDiscount ? product.discount_source : undefined,
+        flash_sale_ends_at: isFlash
+          ? (product.flash_sale_ends_at ?? undefined)
+          : undefined,
       })
     }
     onClose()
@@ -115,6 +131,12 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
                   ))}
                 </div>
               )}
+              {isFlash && (
+                <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-sm">
+                  <Zap className="w-3.5 h-3.5" fill="currentColor" />
+                  Flash Sale
+                </span>
+              )}
             </div>
 
             {/* Thumbnail strip */}
@@ -165,8 +187,29 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
               <span className="text-sm text-muted-foreground">{product.rating}/5</span>
             </div>
 
-            {/* Price */}
-            <p className="text-2xl font-bold text-primary">{formatPrice(product.price)}</p>
+            {/* Price — strike-through original when discounted */}
+            <div>
+              {hasDiscount && isFlash && flashSecondsLeft != null && (
+                <div className="flex items-center gap-1.5 mb-1.5 text-xs font-medium text-red-800">
+                  <Zap className="w-3.5 h-3.5" fill="currentColor" />
+                  Berakhir dalam{' '}
+                  <Countdown
+                    initialRemainingSeconds={flashSecondsLeft}
+                    className="text-sm text-red-800"
+                  />
+                </div>
+              )}
+              <DiscountedPrice
+                price={product.price}
+                originalPrice={originalPrice}
+                discountLabel={hasDiscount ? product.discount_label : null}
+              />
+              {savings != null && (
+                <p className="mt-1 text-sm font-medium text-red-800">
+                  Hemat {formatRupiah(savings)}
+                </p>
+              )}
+            </div>
 
             {/* Description */}
             <p className="text-sm text-muted-foreground leading-relaxed flex-1">

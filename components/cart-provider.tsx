@@ -1,15 +1,37 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  ReactNode,
+} from 'react'
+import { getProductsByIds } from '@/app/api/endpoints/all_active_products'
+import { mergeRefreshedCartItem } from '@/lib/cart-refresh'
+import type { Product } from '@/app/types/product'
 
 export interface CartItem {
   id: string
   name: string
+  /** Effective (discounted) price at the time the item was added. */
   price: number
   /** Storage-relative path of a single image, e.g. `olproducts/foo.jpg`. */
   image: string
   quantity: number
   note?: string
+  /** Pre-discount price — snapshot from the catalog when added. */
+  original_price?: number | null
+  /** Discount label snapshot (e.g. `"Diskon 20%"`). */
+  discount_label?: string | null
+  /** Pricing source snapshot: flash sale or normal discount. */
+  discount_source?: 'flash_sale' | 'normal_discount' | null
+  /** ISO timestamp when the flash sale backing this snapshot ends. */
+  flash_sale_ends_at?: string | null
+  /** Set by `refreshPrices()` when the live price no longer matches this line. */
+  price_changed?: boolean
 }
 
 /**
@@ -42,6 +64,8 @@ interface CartContextType {
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
   clearCart: () => void
+  /** Re-sync cart line prices against the live catalog; flags `price_changed`. */
+  refreshPrices: () => Promise<void>
   mounted: boolean
   cartNotice: CartNotice | null
   dismissCartNotice: () => void
@@ -77,6 +101,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [cart, mounted])
 
+  // Latest-cart ref so async callbacks (refreshPrices) always see the
+  // current cart without subscribing to it.
+  const cartRef = useRef<CartItem[]>(cart)
+  useEffect(() => {
+    cartRef.current = cart
+  }, [cart])
+
   // Auto-dismiss the add-to-cart notification. Re-adding bumps `nonce`, which
   // re-runs this effect and restarts the countdown instead of stacking toasts.
   useEffect(() => {
@@ -95,8 +126,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (existingItem) {
         return prevCart.map((cartItem) =>
           cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
+            ? {
+                ...cartItem,
+                quantity: cartItem.quantity + 1,
+                price_changed: undefined,
+              }
+            : cartItem,
         )
       }
       return [...prevCart, { ...item, quantity: 1 }]
@@ -114,14 +149,49 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     setCart((prevCart) =>
       prevCart.map((item) =>
-        item.id === id ? { ...item, quantity } : item
-      )
+        item.id === id
+          ? { ...item, quantity, price_changed: undefined }
+          : item,
+      ),
     )
   }
 
   const clearCart = () => {
     setCart([])
   }
+
+  const refreshPricesInternal = useCallback(async () => {
+    const ids = Array.from(new Set(cartRef.current.map((item) => item.id)))
+    if (ids.length === 0) return
+
+    // Backend caps `?ids=` at 50 — chunk defensively.
+    const chunks: string[][] = []
+    for (let i = 0; i < ids.length; i += 50) {
+      chunks.push(ids.slice(i, i + 50))
+    }
+
+    let refreshed: Product[]
+    try {
+      const pages = await Promise.all(chunks.map((chunk) => getProductsByIds(chunk)))
+      refreshed = pages.flatMap((page) => page?.data?.data ?? [])
+    } catch {
+      // Offline/failed fetch must not clobber the cart snapshot.
+      return
+    }
+
+    setCart((prev) =>
+      prev.map((item) => mergeRefreshedCartItem(item, refreshed)),
+    )
+  }, [])
+
+  /**
+   * Re-sync cart line prices against the live catalog. Lines whose price
+   * moved get `price_changed` so the UI can surface a "harga berubah"
+   * notice instead of silently charging different amounts.
+   */
+  const refreshPrices = useCallback(async () => {
+    await refreshPricesInternal()
+  }, [refreshPricesInternal])
 
   const dismissCartNotice = () => {
     setCartNotice(null)
@@ -138,6 +208,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     removeItem,
     updateQuantity,
     clearCart,
+    refreshPrices,
     mounted,
     cartNotice,
     dismissCartNotice,

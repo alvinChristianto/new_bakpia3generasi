@@ -19,6 +19,7 @@ import {
   Printer,
 } from "lucide-react";
 import { STATUS_CONFIG } from "@/app/types/order-status";
+import { formatRupiah } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,7 +47,12 @@ interface TransactionDetail {
   id: string;
   product_name_snapshot: string;
   quantity: number;
+  /** Final (discounted) unit price actually charged. */
   price_per_item: number;
+  /** Pre-discount unit price — present when the line was discounted. */
+  original_price: number | null;
+  discount_type: 'percent' | 'fixed' | null;
+  discount_amount: number | null;
   note: string | null;
 }
 
@@ -79,13 +85,6 @@ interface TrackingData {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const formatRupiah = (amount: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
 
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString("id-ID", {
@@ -154,26 +153,43 @@ function OrderDetailColumn({
           {details.length === 0 ? (
             <p className="px-4 py-3 text-muted-foreground">Tidak ada data produk</p>
           ) : (
-            details.map((d) => (
-              <div key={d.id} className="flex justify-between items-start px-4 py-3 gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">
-                    {d.product_name_snapshot}
-                  </p>
-                  {d.note && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Catatan: {d.note}
-                    </p>
-                  )}
-                  <p className="text-muted-foreground mt-1">
-                    {d.quantity} × {formatRupiah(d.price_per_item)}
-                  </p>
-                </div>
-                <p className="font-semibold text-foreground whitespace-nowrap">
-                  {formatRupiah(d.quantity * d.price_per_item)}
-                </p>
-              </div>
-            ))
+            details.map((d) => {
+                const discounted =
+                  d.original_price != null && d.original_price > d.price_per_item;
+                return (
+                  <div key={d.id} className="flex justify-between items-start px-4 py-3 gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">
+                        {d.product_name_snapshot}
+                      </p>
+                      {d.note && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Catatan: {d.note}
+                        </p>
+                      )}
+                      <p className="text-muted-foreground mt-1">
+                        {d.quantity} ×{' '}
+                        {discounted && (
+                          <span className="mr-1 line-through">
+                            {formatRupiah(d.original_price as number)}
+                          </span>
+                        )}
+                        {formatRupiah(d.price_per_item)}
+                      </p>
+                    </div>
+                    <div className="text-right whitespace-nowrap">
+                      <p className="font-semibold text-foreground">
+                        {formatRupiah(d.quantity * d.price_per_item)}
+                      </p>
+                      {discounted && d.discount_amount != null && d.discount_amount > 0 && (
+                        <p className="text-xs text-red-800">
+                          Hemat {formatRupiah(d.discount_amount * d.quantity)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
           )}
         </div>
       </div>
