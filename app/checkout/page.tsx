@@ -49,6 +49,8 @@ import {
   type CheckoutConfig,
 } from "../api/endpoints/checkout-config";
 import { MIN_CHECKOUT_QTY } from "@/lib/order-rules";
+import { formatRupiah } from "@/lib/utils";
+import { Zap } from "lucide-react";
 
 const DEFAULT_CHECKOUT_CONFIG: CheckoutConfig = {
   admin_fee_percent: 10,
@@ -68,14 +70,6 @@ interface CheckoutData {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatRupiah(amount: number) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
-
 function removeLastPartOrderId(orderId: string): string {
   const parts = orderId.split("-");
   if (parts.length <= 1) return orderId;
@@ -87,7 +81,8 @@ function removeLastPartOrderId(orderId: string): string {
 export default function CheckoutPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { cart, cartCount, subtotal, removeItem, updateQuantity } = useCart();
+  const { cart, cartCount, subtotal, removeItem, updateQuantity, refreshPrices } =
+    useCart();
   const { address, clearCourier } = useShipping();
   const shippingCost = getShippingCost(address);
   const courierStale = isCourierStale(address);
@@ -120,6 +115,14 @@ export default function CheckoutPage() {
     getCheckoutConfig()
       .then(setCheckoutConfig)
       .catch(() => {});
+  }, []);
+
+  // Re-sync cart prices against the live catalog on entry (spec §7.3): a
+  // stale snapshot must not be charged — flagged lines show a notice and the
+  // totals re-render from the refreshed values.
+  useEffect(() => {
+    refreshPrices().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Guest one-click sign-in/register. Returns to /checkout, where the existing
@@ -201,6 +204,23 @@ export default function CheckoutPage() {
     [subtotal, shippingCost, tax],
   );
 
+  // Σ (original − final) × qty across discounted lines — display only.
+  const totalSavings = useMemo(
+    () =>
+      cart.reduce(
+        (sum, item) =>
+          item.original_price != null && item.original_price > item.price
+            ? sum + (item.original_price - item.price) * item.quantity
+            : sum,
+        0,
+      ),
+    [cart],
+  );
+
+  const hasFlashItems = cart.some(
+    (item) => item.discount_source === "flash_sale",
+  );
+
   // ── Modal helper ────────────────────────────────────────────────────────────
   const triggerModal = (
     title: string,
@@ -276,10 +296,31 @@ export default function CheckoutPage() {
       const orderItemsError = error?.response?.data?.errors?.order_items?.[0];
       const priceMismatchError =
         error?.response?.data?.errors?.price_mismatch?.[0];
+      const flashSaleError = error?.response?.data?.errors?.flash_sale?.[0];
       if (priceMismatchError) {
+        // Prices were updated server-side — re-sync the cart and let the user
+        // inspect the new totals instead of forcing a page reload.
+        refreshPrices().catch(() => {});
         triggerModal(
           "Harga Berubah",
-          "Harga berubah, silakan muat ulang halaman.",
+          "Harga telah diperbarui, silakan periksa kembali pesanan Anda.",
+          "warning",
+        );
+      } else if (flashSaleError) {
+        // Flash-sale quota was exhausted server-side. Re-sync pricing (the
+        // affected line falls back to its normal price) and tell the user.
+        refreshPrices().catch(() => {});
+        const missedProductId = error?.response?.data?.errors?.product_id as
+          | string
+          | null;
+        const missedProduct = cart.find(
+          (item) => item.id === missedProductId,
+        );
+        triggerModal(
+          "Stok Flash Sale Habis",
+          missedProduct
+            ? `Kuota flash sale untuk ${missedProduct.name} telah habis. Harga telah diperbarui ke harga normal, silakan periksa kembali.`
+            : "Kuota flash sale telah habis. Harga telah diperbarui ke harga normal, silakan periksa kembali.",
           "warning",
         );
       } else if (orderItemsError) {
@@ -483,9 +524,27 @@ export default function CheckoutPage() {
                         <h3 className="font-semibold text-foreground">
                           {item.name}
                         </h3>
+                        {item.original_price != null &&
+                          item.original_price > item.price && (
+                            <p className="text-muted-foreground text-xs mt-1 line-through">
+                              {formatRupiah(item.original_price)} per item
+                            </p>
+                          )}
                         <p className="text-muted-foreground text-sm mt-1">
                           {formatRupiah(item.price)} per item
                         </p>
+                        {item.price_changed && (
+                          <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                            Harga berubah
+                          </span>
+                        )}
+                        {item.discount_label != null &&
+                          item.original_price != null &&
+                          item.original_price > item.price && (
+                            <span className="mt-1 ml-1.5 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                              {item.discount_label}
+                            </span>
+                          )}
                         <p className="text-primary font-bold mt-2">
                           {formatRupiah(item.price * item.quantity)}
                         </p>
@@ -648,9 +707,20 @@ export default function CheckoutPage() {
                       {formatRupiah(tax)}
                     </span>
                   </div>
+
+                  {totalSavings > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-sm font-medium text-red-800">
+                        Hemat
+                      </span>
+                      <span className="font-medium text-red-800">
+                        {formatRupiah(totalSavings)}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-center mb-4">
                   <span className="text-lg font-bold text-foreground">
                     Total
                   </span>
@@ -658,6 +728,19 @@ export default function CheckoutPage() {
                     {formatRupiah(grandTotal)}
                   </span>
                 </div>
+
+                {hasFlashItems && (
+                  <div className="flex items-start gap-2 p-3 bg-muted rounded-lg mb-4">
+                    <Zap
+                      className="w-4 h-4 text-red-800 mt-0.5 flex-shrink-0"
+                      fill="currentColor"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Pesanan Anda mencakup produk Flash Sale. Selesaikan
+                      pembayaran dalam 15 menit agar kuota tidak dilepas.
+                    </p>
+                  </div>
+                )}
 
                 <Button
                   onClick={handleCompleteOrder}
