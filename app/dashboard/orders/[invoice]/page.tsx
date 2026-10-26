@@ -17,6 +17,7 @@ import {
   CreditCard,
   Hash,
   Printer,
+  Download,
 } from "lucide-react";
 import { STATUS_CONFIG } from "@/app/types/order-status";
 import { formatRupiah } from "@/lib/utils";
@@ -279,6 +280,23 @@ function OrderDetailColumn({
             </a>
           </div>
         )}
+
+      {/* Invoice download — all statuses; doubles as order summary/payment reference */}
+      <div className="bg-muted/40 rounded-lg px-4 py-3">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+          <Download className="w-3 h-3" />
+          Invoice
+        </div>
+        <a
+          href={`${process.env.NEXT_PUBLIC_BE_ROUTE}/api/transaction/${transaction.invoice_number}/invoice`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-muted transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Unduh Invoice
+        </a>
+      </div>
 
       {/* Shipping address */}
       {addr && (
