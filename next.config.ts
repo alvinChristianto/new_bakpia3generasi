@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
   // Allow server-side fetch to KiriminAja API (sandbox + production)
   experimental: {
     serverComponentsExternalPackages: [],
+    agentUpgrade: "security",
   },
 
   async headers() {
